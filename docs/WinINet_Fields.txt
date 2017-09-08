@@ -1,0 +1,400 @@
+WININET_APPCACHELOOKUPSTART
+	- URL
+
+WININET_APPCACHELOOKUPSTOP
+	- ManifestURL
+
+WININET_APPLICATION_OFFLINE_CHECKSTART
+	- AppPackageSid
+
+WININET_APPLICATION_OFFLINE_CHECKSTOP
+	- Result
+	- Offline
+
+WININET_AUTH_RESPONSE_RECEIVED
+	- RequestHandle
+	- _SchemeLength
+	- Scheme
+	- IsProxy
+
+WININET_AUTH_CLIENT_SETS_USERNAME
+	- RequestHandle
+	- IsProxy
+
+WININET_AUTODIALIFNOTLOCALHOSTSTART
+	- Request
+	- HostName
+
+WININET_OFFLINECACHELOOKUP
+	- Request
+
+WININET_AUTOPROXY_DHCPSTART
+	- _InterfaceLength
+	- Interface
+
+WININET_AUTOPROXY_DHCPSTOP
+	- _InterfaceLength
+	- Interface
+	- _ConfigurationURLLength
+	- ConfigurationURL
+
+WININET_AUTOPROXY_DHCPFAIL
+	- _InterfaceLength
+	- Interface
+	- _ConfigurationURLLength
+	- ConfigurationURL
+	- Error
+
+WININET_AUTOPROXY_DNSSTART
+	- DetectFlags
+
+WININET_AUTOPROXY_DNSSTOP
+	- _ConfigurationURLLength
+	- ConfigurationURL
+	- DetectFlags
+
+WININET_AUTOPROXY_DNSFAIL
+	- DetectFlags
+	- Error
+
+WININET_AUTOPROXY_DOWNLOADSTART
+	- _ConfigurationURLLength
+	- ConfigurationURL
+
+WININET_AUTOPROXY_DOWNLOADFAIL
+	- _ConfigurationURLLength
+	- ConfigurationURL
+	- Error
+
+WININET_AUTOPROXY_DOWNLOADFAIL812
+	- _ConfigurationURLLength
+	- ConfigurationURL
+	- _MIMETypeLength
+	- MIMEType
+	- Error
+
+WININET_AUTOPROXY_FIND_INFO_FOR_URLSTART
+	- _URLLength
+	- URL
+
+WININET_AUTOPROXY_FIND_INFO_FOR_URLSTOP
+	- _URLLength
+	- URL
+	- _ProxyStringLength
+	- ProxyString
+
+WININET_AUTOPROXY_FIND_INFO_FOR_URLFAIL
+	- _URLLength
+	- URL
+	- Error
+
+WININET_AUTOPROXY_PERFTRACK_ALLSTART
+	- UniqueId
+
+WININET_AUTOPROXY_SEARCHSTART
+	- _ConnectionNameLength
+	- ConnectionName
+	- DetectFlags
+
+WININET_AUTOPROXY_SEARCHFAIL
+	- Error
+
+WININET_AUTOPROXY_SWPAD
+	- WPADNetworkDecision
+	- NetworkCount
+
+WININET_CONNECT_HANDLE_CREATED
+	- ConnectionHandle
+	- ParentHandle
+	- _ServerNameLength
+	- ServerName
+	- ServerPort
+	- _ServiceLength
+	- Service
+	- Flags
+
+WININET_CONNECTSTOP
+	- Request
+	- Socket
+	- Protocol
+	- LocalAddressLength
+	- LocalAddress
+	- RemoteAddressLength
+	- RemoteAddress
+
+WININET_COOKIE_STORED
+	- _DomainLength
+	- Domain
+	- _PathLength
+	- Path
+	- _NameLength
+	- Name
+	- _ValueLength
+	- Value
+
+WININET_COOKIE_HEADER_RECEIVED
+	- URLLength
+	- URL
+
+WININET_DHCP_I252WPADSTART
+	- Order
+	- AddressName
+
+WININET_DHCP_I252WPADSTOP
+	- error
+	- AddressName
+
+WININET_DNS_QUERYSTART
+	- _HostNameLength
+	- HostName
+	- RequestHandle
+
+WININET_DNS_QUERYSTOP
+	- _HostNameLength
+	- HostName
+	- RequestHandle
+	- _AddressListLength
+	- AddressList
+
+WININET_DNS_QUERYFAIL
+	- _HostNameLength
+	- HostName
+	- RequestHandle
+	- Error
+
+WININET_SENDREQUEST_MAIN
+	- Request
+	- Size
+
+WININET_GETADDRINFOSTART
+	- Flags
+	- AddressName
+
+WININET_GETADDRINFOSTOP
+	- error
+	- Flags
+	- AddressName
+
+WININET_HANDLE_CREATE_FAILED
+	- HINTERNET
+	- Error
+
+WININET_HANDLE_CLOSED
+	- HINTERNET
+
+WININET_HTTP_CONNECTION_CLOSED
+	- ConnectionHandle
+	- SocketHandle
+	- _ReasonLength
+	- Reason
+
+WININET_HTTP_REQUEST_HANDLE_CREATED
+	- ConnectionHandle
+	- ParentHandle
+	- _VerbLength
+	- Verb
+	- _ObjectNameLength
+	- ObjectName
+	- _VersionLength
+	- Version
+	- _ReferrerLength
+	- Referrer
+	- _AcceptTypesLength
+	- AcceptTypes
+	- Flags
+
+WININET_HTTP_REQUEST_HANDLE_CREATED108
+	- ConnectionHandle
+	- _ServerNameLength
+	- ServerName
+	- ServerPort
+	- _ServiceLength
+	- Service
+
+WININET_HTTP_REQUESTSTOP
+	- RequestHandle
+	- SocketHandle
+	- _VerbLength
+	- Verb
+	- Cookie
+
+WININET_HTTP_REQUESTFAIL
+	- Handle
+	- Error
+
+WININET_HTTP_RESPONSESTOP
+	- ResponseCode
+	- RequestHandle
+	- SocketHandle
+	- _VerbLength
+	- Verb
+	- _ContentLengthStrLength
+	- ContentLength
+
+WININET_HTTP_RESPONSE_BODY_READ_ERROR
+	- RequestHandle
+	- Error
+
+WININET_HTTP_RESPONSE_BODY_RECEIVED
+	- RequestHandle
+
+WININET_HTTPS_CLIENT_CERT_SELECTED
+	- RequestHandle
+	- _CertHashLength
+	- CertHash
+
+WININET_HTTPS_SERVER_CERT_VALIDATED
+	- RequestHandle
+	- _CertHashLength
+	- CertHash
+	- WarningFlags
+
+WININET_KEEP_ALIVE_CONNECTION_REUSED
+	- ConnectionHandle
+	- SocketHandle
+
+WININET_NETWORK_CHANGE_DETECTED
+	- Handle
+
+WININET_OPEN_URL_HANDLE_CREATED
+	- ConnectionHandle
+	- ParentHandle
+	- _URLLength
+	- URL
+	- _HeadersLength
+	- Headers
+	- Flags
+
+WININET_SENDREQUESTSTART
+	- Request
+	- AddressName
+
+WININET_REQUEST_HEADER
+	- RequestHandle
+	- Length
+	- Headers
+
+WININET_REQUESTPRIORITYSET
+	- Request
+	- OldPriority
+	- NewPriority
+
+WININET_ROOT_HANDLE_CREATED
+	- HINTERNET
+	- _UserAgentLength
+	- UserAgent
+	- _AccessTypeLength
+	- AccessType
+	- _ProxyListLength
+	- ProxyList
+	- _ProxyBypassListLength
+	- ProxyBypassList
+	- Flags
+
+WININET_SELECTSTART
+	- Request
+	- Flags
+
+WININET_SENDREQUESTSTOP
+	- Request
+	- StatusLineLength
+	- StatusLine
+
+WININET_SOCKETCONNECTSTART
+	- Request
+	- Socket
+	- SourcePort
+	- RemoteAddressIndex
+
+WININET_STREAM_DATA_INDICATED
+	- RequestHandle
+	- StreamId
+	- Size
+	- Headers
+
+WININET_TCP_CONNECTIONSTART
+	- _ServerNameLength
+	- ServerName
+	- ConnectionHandle
+	- SocketHandle
+	- LocalPort
+
+WININET_TCP_CONNECTIONFAIL
+	- _ServerNameLength
+	- ServerName
+	- ConnectionHandle
+	- Error
+
+WININET_TCP_CONNECTIONSTOP
+	- SocketHandle
+
+WININET_TEST_EVENT
+	- _TestStr0Length
+	- TestStr0
+	- _TestStr1Length
+	- TestStr1
+	- _TestStr2Length
+	- TestStr2
+	- _TestStr0WLength
+	- TestStr0W
+	- _TestStr1WLength
+	- TestStr1W
+	- _TestStr2WLength
+	- TestStr2W
+	- TestStrLength
+	- TestStr
+	- TestStrWLength
+	- TestStrW
+
+WININET_USAGELOGREQUEST
+	- URL
+	- Verb
+	- RequestHeaders
+	- ResponseHeaders
+	- Status
+	- UsageLogRequestCache
+
+WININET_USAGELOGSCAVENGE
+	- URL
+
+WININET_WEBSOCKETSESSIONSTART
+	- CorrelationID
+
+WININET_WEBSOCKETSESSIONSTOP
+	- CorrelationID
+	- Status
+
+WININET_WEBSOCKETSESSION
+	- CorrelationID
+	- Length
+	- TruncatedLength
+	- TruncatedData
+
+WININET_WEBSOCKETSESSION406
+	- CorrelationID
+	- Length
+
+WININET_WEBSOCKETSESSION407
+	- CorrelationID
+	- Status
+	- Length
+	- Reason
+
+WININET_WEBSOCKETSESSION414
+	- CorrelationID
+	- SequenceNumber
+	- PayloadByteLength
+	- Payload
+
+WININET_WEBSOCKETUPGRADE
+	- CorrelationID
+	- InternetFlags
+	- Length
+	- Headers
+
+WININET_WEBSOCKETUPGRADE401
+	- CorrelationID
+	- ResponseCode
+	- Length
+	- Headers
+

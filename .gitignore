@@ -1,0 +1,29 @@
+# None of the actual builds should be committed.
+.vs
+*.dll
+*.exp
+*.lib
+*.obj
+*.pyc
+
+# OS X
+.DS_Store
+*.swp
+*.bin
+
+# Windows
+*/Thumbs.db
+
+# VIM
+.ropeproject/*
+*.un~
+*.*~
+
+# Ignore all PyCharm files
+.idea/*
+
+# Ignore profiling dumps
+*.prof
+
+# Testing stuff
+.tox
