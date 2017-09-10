@@ -138,8 +138,8 @@ class EventProvider:
                                    ct.byref(self.provider_guid),
                                    et.EVENT_CONTROL_CODE_ENABLE_PROVIDER,
                                    self.level,
-                                   self.match_all_bitmask,
                                    self.match_any_bitmask,
+                                   self.match_all_bitmask,
                                    0,
                                    None)
         if status != tdh.ERROR_SUCCESS:
@@ -157,8 +157,8 @@ class EventProvider:
                                    ct.byref(self.provider_guid),
                                    et.EVENT_CONTROL_CODE_DISABLE_PROVIDER,
                                    self.level,
-                                   self.match_all_bitmask,
                                    self.match_any_bitmask,
+                                   self.match_all_bitmask,
                                    0,
                                    None)
         if status != tdh.ERROR_SUCCESS:
