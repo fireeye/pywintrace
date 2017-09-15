@@ -803,14 +803,15 @@ def get_keywords_bitmask(guid, keywords):
         if tdh.ERROR_SUCCESS != status and tdh.ERROR_NOT_FOUND != status:
             raise ct.WinError()
 
-    field_info_array = ct.cast(provider_info.contents.FieldInfoArray, ct.POINTER(tdh.PROVIDER_FIELD_INFO))
-    provider_keywords = {}
-    for i in range(provider_info.contents.NumberOfElements):
-        provider_keyword = rel_ptr_to_str(provider_info, field_info_array[i].NameOffset)
-        provider_keywords[provider_keyword] = field_info_array[i].Value
+    if provider_info:
+        field_info_array = ct.cast(provider_info.contents.FieldInfoArray, ct.POINTER(tdh.PROVIDER_FIELD_INFO))
+        provider_keywords = {}
+        for i in range(provider_info.contents.NumberOfElements):
+            provider_keyword = rel_ptr_to_str(provider_info, field_info_array[i].NameOffset)
+            provider_keywords[provider_keyword] = field_info_array[i].Value
 
-    for keyword in keywords:
-        if keyword in provider_keywords:
-            bitmask |= provider_keywords[keyword]
+        for keyword in keywords:
+            if keyword in provider_keywords:
+                bitmask |= provider_keywords[keyword]
 
     return bitmask

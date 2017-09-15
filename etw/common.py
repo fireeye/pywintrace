@@ -129,13 +129,13 @@ def set_base_args(name):
     description_format = 'Use ETW (Event Tracing for Windows) to capture {:s} events'.format(name)
     parser = argparse.ArgumentParser(description=description_format)
 
-    parser.add_argument('--ring-buffer-size', default=1024,
+    parser.add_argument('--ring-buffer-size', default=1024, type=int,
                         help='The size of the ring buffer used for capturing events')
-    parser.add_argument('--max-str-len', default=1024,
+    parser.add_argument('--max-str-len', default=1024, type=int,
                         help='The maximum length of the strings that proceed the structure')
-    parser.add_argument('--min-buffers', default=0,
+    parser.add_argument('--min-buffers', default=0, type=int,
                         help='The minimum number of buffers for an event tracing session')
-    parser.add_argument('--max-buffers', default=0,
+    parser.add_argument('--max-buffers', default=0, type=int,
                         help='The maximum number of buffers for an event tracing session')
     parser.add_argument('--filters', default=None, nargs='+',
                         help='A whitelist of task_names that we want to handle post-capture')
