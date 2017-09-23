@@ -106,11 +106,20 @@ class EventProvider:
         :param session_name: The name of the provider session.
         :param session_properties: A TraceProperties instance used to specify the parameters for the provider
         :param level: The logging level desired.
-        :param match_any_bitmask: Bit mask of flags for the any match keywords.
+        :param match_any_bitmask: Bit mask of flags for the any match keywords. These flags are the only flags used for
+                                  "NT Kernel Logger" sessions.
         :param match_all_bitmask: Bit mask of flags for the all match keywords.
         """
         self.provider_guid = provider_guid
-        self.session_name = session_name
+
+        # check if the session name is "NT Kernel Logger"
+        self.kernel_trace = False
+        if session_name.lower() == et.KERNEL_LOGGER_NAME_LOWER:
+            self.session_name = et.KERNEL_LOGGER_NAME
+            self.kernel_trace = True
+        else:
+            self.session_name = session_name
+
         self.session_properties = session_properties
         self.session_handle = et.TRACEHANDLE()
         self.level = level
@@ -130,20 +139,31 @@ class EventProvider:
 
         :return:  Does not return anything.
         """
+
+        if self.kernel_trace is True:
+            self.session_properties.get().contents.Wnode.Guid = self.provider_guid
+            self.session_properties.get().contents.LogFileMode |= et.EVENT_TRACE_SYSTEM_LOGGER_MODE
+
+            if self.match_any_bitmask:
+                self.session_properties.get().contents.EnableFlags = self.match_any_bitmask
+            else:
+                self.session_properties.get().contents.EnableFlags = et.DEFAULT_NT_KERNEL_LOGGER_FLAGS
+
         status = et.StartTraceW(ct.byref(self.session_handle), self.session_name, self.session_properties.get())
         if status != tdh.ERROR_SUCCESS:
             raise ct.WinError()
 
-        status = et.EnableTraceEx2(self.session_handle,
-                                   ct.byref(self.provider_guid),
-                                   et.EVENT_CONTROL_CODE_ENABLE_PROVIDER,
-                                   self.level,
-                                   self.match_any_bitmask,
-                                   self.match_all_bitmask,
-                                   0,
-                                   None)
-        if status != tdh.ERROR_SUCCESS:
-            raise ct.WinError()
+        if self.kernel_trace is False:
+            status = et.EnableTraceEx2(self.session_handle,
+                                       ct.byref(self.provider_guid),
+                                       et.EVENT_CONTROL_CODE_ENABLE_PROVIDER,
+                                       self.level,
+                                       self.match_any_bitmask,
+                                       self.match_all_bitmask,
+                                       0,
+                                       None)
+            if status != tdh.ERROR_SUCCESS:
+                raise ct.WinError()
 
     def stop(self):
         """
@@ -153,16 +173,18 @@ class EventProvider:
         """
         if self.session_handle.value == 0:
             return
-        status = et.EnableTraceEx2(self.session_handle,
-                                   ct.byref(self.provider_guid),
-                                   et.EVENT_CONTROL_CODE_DISABLE_PROVIDER,
-                                   self.level,
-                                   self.match_any_bitmask,
-                                   self.match_all_bitmask,
-                                   0,
-                                   None)
-        if status != tdh.ERROR_SUCCESS:
-            raise ct.WinError()
+
+        if self.kernel_trace is False:
+            status = et.EnableTraceEx2(self.session_handle,
+                                       ct.byref(self.provider_guid),
+                                       et.EVENT_CONTROL_CODE_DISABLE_PROVIDER,
+                                       self.level,
+                                       self.match_any_bitmask,
+                                       self.match_all_bitmask,
+                                       0,
+                                       None)
+            if status != tdh.ERROR_SUCCESS:
+                raise ct.WinError()
 
         status = et.ControlTraceW(self.session_handle,
                                   self.session_name,
