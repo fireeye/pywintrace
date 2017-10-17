@@ -405,28 +405,6 @@ class EventConsumer:
         # We actually failed.
         raise ct.WinError()
 
-    @staticmethod
-    def _handleEvtInvalidEvtData(user_data, user_data_remaining):
-        """
-        In this instance, the amount of data we are told to parse exceeds the amount of data that is left in the
-        user data appended to the structure. As viewed in Microsoft Message Analyzer, this appears to be commonly
-        referred to as a fragment. In this case, we simply copy the data to a new buffer, add a NULL terminating
-        character on to the end and call TdhFormatProperty again.
-
-        :param user_data: A pointer to the user data for the specified segment
-        :param user_data_remaining: The amount of data that is actually left
-        :return: A tuple of the amount consumed and the data itself
-        """
-        # Instantiate a buffer with enough space for everything plus the NULL terminating character.
-        buf = (ct.c_char * (user_data_remaining + ct.sizeof(ct.c_wchar)))()
-
-        # Move the data to the new buffer and NULL terminate it.
-        ct.memmove(buf, user_data, user_data_remaining)
-
-        user_data_consumed = ct.c_ushort(user_data_remaining)
-
-        return user_data_consumed, buf
-
     def _unpackSimpleType(self, record, info, event_property):
         """
         This method handles dumping all simple types of data (i.e., non-struct types).
@@ -509,7 +487,9 @@ class EventConsumer:
                 raise ct.WinError(status)
 
             # We can handle this error and still capture the data.
-            user_data_consumed, formatted_data = self._handleEvtInvalidEvtData(user_data, user_data_remaining)
+            logger.warning('Failed to get data field data for {:s}, incrementing by reported size'.format(name_field))
+            self.index += property_length
+            return {name_field: None}
 
         # Increment where we are in the user data segment that we are parsing.
         self.index += user_data_consumed.value
