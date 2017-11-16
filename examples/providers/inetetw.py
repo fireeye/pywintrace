@@ -14,7 +14,7 @@
 # limitations under the License.
 ########################################################################
 
-from etw import ETW
+from etw import ETW, ProviderInfo
 from etw.GUID import GUID
 from etw import common
 from etw import evntrace as et
@@ -30,7 +30,11 @@ class INETETW(ETW):
             max_buffers=0,
             level=et.TRACE_LEVEL_INFORMATION,
             any_keywords=None,
-            all_keywords=None):
+            all_keywords=None,
+            filters=None,
+            event_callback=None,
+            logfile=None,
+            no_conout=False):
         """
         Initializes an instance of INETETW. The default parameters represent a very typical use case and should not be
         overridden unless the user knows what they are doing.
@@ -45,45 +49,48 @@ class INETETW(ETW):
         :param level: Logging level
         :param any_keywords: List of keywords to match
         :param all_keywords: List of keywords that all must match
+        :param filters: List of filters to apply to capture.
+        :param event_callback: Callback for processing events
+        :param logfile: Path to logfile.
+        :param no_conout: If true does not output live capture to console.
         """
-        guid = {'Microsoft-Windows-WinINet': GUID("{43D1A55C-76D6-4F7E-995C-64C711E5CAFE}")}
+
+        self.logfile = logfile
+        self.no_conout = no_conout
+        if event_callback:
+            self.event_callback = event_callback
+        else:
+            self.event_callback = self.on_event
+
+        providers = [ProviderInfo('Microsoft-Windows-WinINet',
+                                  GUID("{43D1A55C-76D6-4F7E-995C-64C711E5CAFE}"),
+                                  level,
+                                  any_keywords,
+                                  all_keywords),
+                     ProviderInfo('Microsoft-Windows-WinINet-Capture',
+                                  GUID("{A70FF94F-570B-4979-BA5C-E59C9FEAB61B}"),
+                                  level,
+                                  any_keywords,
+                                  all_keywords)]
 
         super().__init__(
-            guid,
-            ring_buf_size,
-            max_str_len,
-            min_buffers,
-            max_buffers,
-            level,
-            any_keywords,
-            all_keywords)
+            ring_buf_size=ring_buf_size,
+            max_str_len=max_str_len,
+            min_buffers=min_buffers,
+            max_buffers=max_buffers,
+            event_callback=self.event_callback,
+            task_name_filters=filters,
+            providers=providers)
 
-        self.add_provider(
-            {'Microsoft-Windows-WinINet-Capture': GUID("{A70FF94F-570B-4979-BA5C-E59C9FEAB61B}")},
-            any_keywords,
-            all_keywords)
+    def on_event(self, event_tufo):
+        '''
+        Callback for ETW events
 
-    def start(self, event_callback=None, task_name_filters=None, ignore_exists_error=True):
-        """
-        Starts the providers and the consumers for capturing data using ETW by calling parent class start().
+        :param event_tufo: tufo containing event information
+        :return: Does not return anything
+        '''
 
-        :param event_callback: An optional parameter allowing the caller to specify a callback function for each event
-                               that is parsed.
-        :param task_name_filters: List of filters to apply to the ETW capture
-        :param ignore_exists_error: If true (default), the library will ignore an ERROR_ALREADY_EXISTS on
-                                    the EventProvider start.
-        :return: Does not return anything.
-        """
-
-        super().start(event_callback, task_name_filters, ignore_exists_error)
-
-    def stop(self):
-        """
-        Stops the current consumers and providers by calling parent class stop()
-
-        :return: Does not return anything.
-        """
-        super().stop()
+        common.on_event_callback(event_tufo, self.logfile, self.no_conout)
 
 
 def main(args):
@@ -93,31 +100,23 @@ def main(args):
     :param args: a dict of all args.
     :return: Does not return anything.
     """
-    # Create an INETETW instance with the parameters provided.
-    job = INETETW(
-        args['ring_buffer_size'],
-        args['max_str_len'],
-        args['min_buffers'],
-        args['max_buffers'],
-        args['level'],
-        args['any_keywords'],
-        args['all_keywords'])
 
     if args['default_filters'] is True:
-        filters = ['WININET_USAGELOGREQUEST',
-                   'WININET_CONNECT_HANDLE_CREATED',
-                   'WININET_DNS_QUERYSTART',
-                   'WININET_HTTP_REQUEST_HANDLE_CREATED',
-                   'WININET_HTTPS_CLIENT_CERT_SELECTED',
-                   'WININET_HTTPS_SERVER_CERT_VALIDATED',
-                   'WININET_OPEN_URL_HANDLE_CREATED',
-                   'WININET_ROOT_HANDLE_CREATED',
-                   'WININET_TCP_CONNECTIONSTART']
-    else:
-        filters = args['filters']
+        args['filters'] = ['WININET_USAGELOGREQUEST',
+                           'WININET_CONNECT_HANDLE_CREATED',
+                           'WININET_DNS_QUERYSTART',
+                           'WININET_HTTP_REQUEST_HANDLE_CREATED',
+                           'WININET_HTTPS_CLIENT_CERT_SELECTED',
+                           'WININET_HTTPS_SERVER_CERT_VALIDATED',
+                           'WININET_OPEN_URL_HANDLE_CREATED',
+                           'WININET_ROOT_HANDLE_CREATED',
+                           'WININET_TCP_CONNECTIONSTART']
+    args.pop('default_filters')
 
-    # call common run function to handle command line inout / output
-    common.run('wininet_etw', job, filters, args['logfile'], args['no_conout'])
+    # Create an INETETW instance with the parameters provided.
+    with INETETW(**args):
+        # call common run function to handle command line inout / output
+        common.run('wininet_etw', args['filters'])
 
 
 if __name__ == '__main__':

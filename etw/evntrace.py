@@ -29,6 +29,10 @@ KERNEL_LOGGER_NAME = "NT Kernel Logger"
 KERNEL_LOGGER_NAME_LOWER = "nt kernel logger"
 
 
+ENABLE_TRACE_PARAMETERS_VERSION = 1
+ENABLE_TRACE_PARAMETERS_VERSION_2 = 2
+
+
 EVENT_TRACE_FLAG_PROCESS = 0x00000001
 EVENT_TRACE_FLAG_THREAD = 0x00000002
 EVENT_TRACE_FLAG_IMAGE_LOAD = 0x00000004
@@ -71,6 +75,10 @@ TRACE_LEVEL_ERROR = 2        # Severe errors that need logging
 TRACE_LEVEL_WARNING = 3      # Warnings such as allocation failure
 TRACE_LEVEL_INFORMATION = 4  # Includes non-error cases(e.g.,Entry-Exit)
 TRACE_LEVEL_VERBOSE = 5      # Detailed traces from intermediate steps
+TRACE_LEVEL_RESERVED6 = 6
+TRACE_LEVEL_RESERVED7 = 7
+TRACE_LEVEL_RESERVED8 = 8
+TRACE_LEVEL_RESERVED9 = 9
 
 # EVENT_CONTROL flags
 EVENT_CONTROL_CODE_DISABLE_PROVIDER = 0
@@ -82,8 +90,49 @@ EVENT_TRACE_CONTROL_QUERY = 0
 EVENT_TRACE_CONTROL_STOP = 1
 EVENT_TRACE_CONTROL_UPDATE = 2
 
-EVENT_TRACE_REAL_TIME_MODE = 0x00000100
-EVENT_TRACE_SYSTEM_LOGGER_MODE = 0x02000000
+
+# Logger Mode flags
+EVENT_TRACE_FILE_MODE_NONE = 0x00000000  # Logfile is off
+EVENT_TRACE_FILE_MODE_SEQUENTIAL = 0x00000001  # Log sequentially
+EVENT_TRACE_FILE_MODE_CIRCULAR = 0x00000002  # Log in circular manner
+EVENT_TRACE_FILE_MODE_APPEND = 0x00000004  # Append sequential log
+
+EVENT_TRACE_REAL_TIME_MODE = 0x00000100  # Real time mode on
+EVENT_TRACE_DELAY_OPEN_FILE_MODE = 0x00000200  # Delay opening file
+EVENT_TRACE_BUFFERING_MODE = 0x00000400  # Buffering mode only
+EVENT_TRACE_PRIVATE_LOGGER_MODE = 0x00000800  # Process Private Logger
+EVENT_TRACE_ADD_HEADER_MODE = 0x00001000  # Add a logfile header
+
+EVENT_TRACE_USE_GLOBAL_SEQUENCE = 0x00004000  # Use global sequence no.
+EVENT_TRACE_USE_LOCAL_SEQUENCE = 0x00008000  # Use local sequence no.
+
+EVENT_TRACE_RELOG_MODE = 0x00010000  # Relogger
+
+EVENT_TRACE_USE_PAGED_MEMORY = 0x01000000  # Use pageable buffers
+
+# Logger Mode flags on XP and above
+EVENT_TRACE_FILE_MODE_NEWFILE = 0x00000008  # Auto-switch log file
+EVENT_TRACE_FILE_MODE_PREALLOCATE = 0x00000020  # Pre-allocate mode
+
+# Logger Mode flags on Vista and above
+EVENT_TRACE_NONSTOPPABLE_MODE = 0x00000040  # Session cannot be stopped (Autologger only)
+EVENT_TRACE_SECURE_MODE = 0x00000080  # Secure session
+EVENT_TRACE_USE_KBYTES_FOR_SIZE = 0x00002000  # Use KBytes as file size unit
+EVENT_TRACE_PRIVATE_IN_PROC = 0x00020000  # In process private logger
+
+EVENT_TRACE_MODE_RESERVED = 0x00100000  # Reserved bit, used to signal Heap/Critsec tracing
+
+# Logger Mode flags on Win7 and above
+EVENT_TRACE_NO_PER_PROCESSOR_BUFFERING = 0x10000000  # Use this for low frequency sessions.
+
+# Logger Mode flags on Win8 and above
+EVENT_TRACE_SYSTEM_LOGGER_MODE = 0x02000000  # Receive events from SystemTraceProvider
+EVENT_TRACE_ADDTO_TRIAGE_DUMP = 0x80000000  # Add ETW buffers to triage dumps
+EVENT_TRACE_STOP_ON_HYBRID_SHUTDOWN = 0x00400000  # Stop on hybrid shutdown
+EVENT_TRACE_PERSIST_ON_HYBRID_SHUTDOWN = 0x00800000  # Persist on hybrid shutdown
+
+# Logger Mode flags on Blue and above
+EVENT_TRACE_INDEPENDENT_SESSION_MODE = 0x08000000  # Independent logger session
 
 
 class ENABLE_TRACE_PARAMETERS(ct.Structure):

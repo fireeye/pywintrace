@@ -20,15 +20,15 @@ import etw
 
 class MyETW(etw.ETW):
 
-    def __init__(self):
-        # define capture GUID
-        guid = {'Some Provider': etw.GUID("{11111111-1111-1111-1111-111111111111}")}
-        super().__init__(guid)
+    def __init__(self, event_callback):
+        # define capture provider info
+        providers = [etw.ProviderInfo('Some Provider', etw.GUID("{11111111-1111-1111-1111-111111111111}"))]
+        super().__init__(providers=providers, event_callback=event_callback)
 
-    def start(self, event_callback=None, task_name_filters=None, ignore_exists_error=True):
+    def start(self):
         # do pre-capture setup
         self.do_capture_setup()
-        super().start(event_callback)
+        super().start()
 
     def stop(self):
         super().stop()
@@ -46,9 +46,9 @@ class MyETW(etw.ETW):
 
 def my_capture():
     # instantiate class
-    capture = MyETW()
+    capture = MyETW(lambda x: print(x))
     # start capture
-    capture.start(lambda x: print(x))
+    capture.start()
     # wait some time to capture data
     time.sleep(5)
     # stop capture

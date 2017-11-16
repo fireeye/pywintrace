@@ -37,8 +37,9 @@ class TestPROCETW(unittest.TestCase):
         cls.context_fields = {'Description', 'Task Name'}
 
         # Instantiate an PROCETW object
-        capture = procetw.PROCETW()
-        capture.start(lambda event_tufo: cls.event_tufo_list.append(event_tufo), None)
+        capture = procetw.PROCETW(event_callback=lambda event_tufo: cls.event_tufo_list.append(event_tufo),
+                                  any_keywords=['WINEVENT_KEYWORD_PROCESS', 'WINEVENT_KEYWORD_THREAD'])
+        capture.start()
 
         # start notepad
         args = ['notepad.exe']

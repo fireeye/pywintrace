@@ -25,13 +25,18 @@ if system != 'Windows':
     exit(-1)
 
 
+if sys.getwindowsversion().major < 6 or (sys.getwindowsversion().major == 6 and sys.getwindowsversion().minor < 1):
+    print('ERROR: Cannot install on Windows versions less than 7 / Server 2008 R2')
+    exit(-1)
+
+
 if sys.version_info < (3, 4):
     print('ERROR: Python version must be greater or equal to 3.4')
     exit(-1)
 
 
 setup(name='wintrace',
-      version='0.0.1',
+      version='0.0.2',
       description='ETW Tracing',
       author='Anthony Berglund',
       url='https://github.com/fireeye/pywintrace',

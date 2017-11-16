@@ -20,9 +20,9 @@ import ipaddress
 import ctypes as ct
 import ctypes.wintypes as wt
 
-from etw import wininet as wi
+from .helpers import wininet as wi
 from examples.providers import inetetw
-from etw import httpstatus
+from .helpers import httpstatus
 
 # Constants
 MAX_INT32 = 2**32 - 1
@@ -110,8 +110,8 @@ class TestINETETW(unittest.TestCase):
         cls.context_fields = {'Description', 'Task Name'}
 
         # Instantiate an INETETW object
-        p = inetetw.INETETW()
-        p.start(lambda event_tufo: cls.event_tufo_list.append(event_tufo), [])
+        p = inetetw.INETETW(event_callback=lambda event_tufo: cls.event_tufo_list.append(event_tufo))
+        p.start()
 
         # Make a WinINet request and save the actual response.
         cls.wininet_response = cls.makeRequest()
