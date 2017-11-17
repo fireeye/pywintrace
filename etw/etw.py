@@ -234,7 +234,7 @@ class EventConsumer:
                  task_name_filters,
                  event_id_filters,
                  callback_data_flag,
-                 logfile=None):
+                 trace_logfile=None):
         """
         Initializes a real time event consumer object.
 
@@ -243,7 +243,7 @@ class EventConsumer:
         :param task_name_filters: List of filters to apply to the ETW capture
         :param event_id_filters: List of event ids to filter on.
         :param callback_data_flag: Determines how to format data passed into callback.
-        :param logfile: EVENT_TRACE_LOGFILE structure.
+        :param trace_logfile: EVENT_TRACE_LOGFILE structure.
         """
         self.trace_handle = None
         self.process_thread = None
@@ -256,17 +256,17 @@ class EventConsumer:
         self.event_id_filters = event_id_filters
         self.callback_data_flag = callback_data_flag
 
-        if not logfile:
+        if not trace_logfile:
             # Construct the EVENT_TRACE_LOGFILE structure
-            self.logfile = et.EVENT_TRACE_LOGFILE()
-            self.logfile.ProcessTraceMode = (ec.PROCESS_TRACE_MODE_REAL_TIME | ec.PROCESS_TRACE_MODE_EVENT_RECORD)
-            self.logfile.LoggerName = logger_name
+            self.trace_logfile = et.EVENT_TRACE_LOGFILE()
+            self.trace_logfile.ProcessTraceMode = (ec.PROCESS_TRACE_MODE_REAL_TIME | ec.PROCESS_TRACE_MODE_EVENT_RECORD)
+            self.trace_logfile.LoggerName = logger_name
         else:
-            self.logfile = logfile
+            self.trace_logfile = trace_logfile
 
-        if not self.logfile.EventRecordCallback and \
-           self.logfile.ProcessTraceMode & (ec.PROCESS_TRACE_MODE_REAL_TIME | ec.PROCESS_TRACE_MODE_EVENT_RECORD):
-            self.logfile.EventRecordCallback = et.EVENT_RECORD_CALLBACK(self._processEvent)
+        if not self.trace_logfile.EventRecordCallback and \
+           self.trace_logfile.ProcessTraceMode & (ec.PROCESS_TRACE_MODE_REAL_TIME | ec.PROCESS_TRACE_MODE_EVENT_RECORD):
+            self.trace_logfile.EventRecordCallback = et.EVENT_RECORD_CALLBACK(self._processEvent)
 
     def __enter__(self):
         self.start()
@@ -280,7 +280,7 @@ class EventConsumer:
 
         :return: Returns True on Success or False on Failure
         """
-        self.trace_handle = et.OpenTraceW(ct.byref(self.logfile))
+        self.trace_handle = et.OpenTraceW(ct.byref(self.trace_logfile))
         if self.trace_handle == et.INVALID_PROCESSTRACE_HANDLE:
             raise ct.WinError()
 
@@ -740,7 +740,7 @@ class ETW:
             ignore_exists_error=True,
             event_id_filters=None,
             callback_data_flag=0,
-            logfile=None):
+            trace_logfile=None):
         """
         Initializes an instance of the ETW class. The default buffer parameters represent a very typical use case and
         should not be overridden unless the user knows what they are doing.
@@ -763,7 +763,7 @@ class ETW:
                                     EventProvider start.
         :param event_id_filters: List of event ids to filter on.
         :param callback_data_flag: Determines how to format data passed into callback.
-        :param logfile: EVENT_TRACE_LOGFILE structure to be passed to the consumer.
+        :param trace_logfile: EVENT_TRACE_LOGFILE structure to be passed to the consumer.
         """
 
         if task_name_filters is None:
@@ -800,7 +800,7 @@ class ETW:
         self.event_callback = event_callback
         self.ignore_exists_error = ignore_exists_error
         self.callback_data_flag = callback_data_flag
-        self.logfile = logfile
+        self.trace_logfile = trace_logfile
 
     def __enter__(self):
         self.start()
@@ -833,7 +833,7 @@ class ETW:
                                           self.task_name_filters,
                                           self.event_id_filters,
                                           self.callback_data_flag,
-                                          self.logfile)
+                                          self.trace_logfile)
             self.consumer.start()
 
     def stop(self):
