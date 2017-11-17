@@ -85,7 +85,7 @@ class PROCETW(ETW):
         :return: Does not return anything
         '''
 
-        common.on_event_callback(event_tufo, self.logfile, self.no_conout)
+        common.on_event_callback(event_tufo, logfile=self.logfile, no_conout=self.no_conout)
 
 
 def main(args):
