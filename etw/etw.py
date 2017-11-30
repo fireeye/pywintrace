@@ -216,6 +216,7 @@ class EventProvider:
                                   et.EVENT_TRACE_CONTROL_STOP)
         if status != tdh.ERROR_SUCCESS:
             raise ct.WinError()
+        et.CloseTrace(self.session_handle)
 
 
 class EventConsumer:
