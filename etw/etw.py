@@ -859,6 +859,14 @@ class ETW:
 
         self.providers.append(provider)
 
+    def query(self):
+        props = TraceProperties()
+        et.ControlTraceW(et.TRACEHANDLE(0),
+                         self.session_name,
+                         props.get(),
+                         et.EVENT_TRACE_CONTROL_QUERY)
+        return props.get().contents
+
 
 class ProviderInfo:
     """ Container class for provider info """
