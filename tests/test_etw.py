@@ -16,11 +16,18 @@
 
 import unittest
 import time
+import ctypes as ct
+import ctypes.wintypes as wt
 import subprocess as sp
 
-from etw import etw
+from etw import ETW, ProviderInfo
+from etw.etw import TraceProperties, ProviderParameters
 from etw.GUID import GUID
-from etw import wmi
+from etw import evntrace as et
+from etw import evntprov as ep
+from etw.etw import get_keywords_bitmask
+from .helpers import wininet as wi
+from etw import common
 
 
 class TestETW(unittest.TestCase):
@@ -37,17 +44,50 @@ class TestETW(unittest.TestCase):
         # Instantiate our list where all of the results will be stored
         cls.event_tufo_list = list()
         cls.context_fields = {'Description', 'Task Name'}
-
-        args = ['powershell.exe', '$PSVersionTable.PSVersion']
-        p = sp.Popen(args, stdout=sp.PIPE, stderr=sp.DEVNULL)
-        out, _ = p.communicate()
-
-        cls.skip_tests = False
-        version = int(out.decode('utf-8').split('\n')[3].split(' ')[0].strip())
-        if version < 3:
-            cls.skip_tests = True
-
+        cls.user_agent = 'TestAgent'
+        cls.url = 'www.gmail.com'
+        cls.port = 80
+        cls.verb = 'GET'
+        cls.size = 1337
         return
+
+    def makeRequest(cls):
+        """
+        Issue a WININET request based on the class parameters.
+
+        :return: None
+        """
+        hInternet = wi.InternetOpenW(
+            cls.user_agent,
+            wi.INTERNET_OPEN_TYPE_DIRECT, None, None, 0)
+        if hInternet is None:
+            raise ct.WinError()
+
+        hSession = wi.InternetConnectW(hInternet, cls.url, cls.port, None, None, wi.INTERNET_SERVICE_HTTP, 0, 0)
+        if hSession is None:
+            raise ct.WinError()
+
+        hRequest = wi.HttpOpenRequestW(hSession, cls.verb, '', None, None, None, 0, 0)
+        if hRequest is None:
+            raise ct.WinError()
+
+        request_sent = wi.HttpSendRequestW(hRequest, None, 0, None, 0)
+        if request_sent == 0:
+            raise ct.WinError()
+
+        # Setup the necessary parameters to read the server's response
+        buff_size = wt.DWORD(cls.size)
+        buf = (ct.c_char * buff_size.value)()
+        keep_reading = 1
+        bytes_read = wt.DWORD(-1)
+        response_str = str()
+
+        while keep_reading == 1 and bytes_read.value != 0:
+            # Read the entire response.
+            keep_reading = wi.InternetReadFile(hRequest, buf, buff_size, ct.byref(bytes_read))
+            response_str += str(buf.value)
+
+        return response_str
 
     def find_event(self, name):
         """
@@ -85,27 +125,25 @@ class TestETW(unittest.TestCase):
         :return: None
         """
 
-        if self.skip_tests:
-            self.skipTest('PowerShell version must be greater than 2')
-
         # Instantiate an ETW object
-        capture = etw.ETW({'Microsoft-Windows-PowerShell': GUID("{A0C1853B-5C40-4B15-8766-3CF1C58F985A}")})
-        capture.start(lambda event_tufo: self.event_tufo_list.append(event_tufo), None)
+        capture = ETW(providers=[ProviderInfo('Microsoft-Windows-WinINet',
+                                              GUID("{43D1A55C-76D6-4F7E-995C-64C711E5CAFE}"))],
+                      event_callback=lambda event_tufo: self.event_tufo_list.append(event_tufo))
+        capture.start()
 
-        # start powershell
-        args = ['powershell']
-        p = sp.Popen(args, stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+        self.makeRequest()
+
+        # Ensure that we have a chance for all the events to come back
         time.sleep(5)
-        p.kill()
 
         # Stop the ETW instance
         capture.stop()
-        event = self.find_event('POWERSHELL CONSOLE STARTUP')
+        event = self.find_event('WININET_READDATA')
         self.assertTrue(event)
         event = self.trim_fields(event)
 
-        # This event should have 1 field
-        self.assertEqual(len(event), 1)
+        # This event should have 3 fields
+        self.assertEqual(len(event), 3)
         self.event_tufo = []
 
         return
@@ -117,16 +155,16 @@ class TestETW(unittest.TestCase):
         :return: None
         """
 
-        if self.skip_tests:
-            self.skipTest('PowerShell version must be greater than 2')
-
         # Instantiate an ETW object
-        capture = etw.ETW({'Microsoft-Windows-PowerShell': GUID("{A0C1853B-5C40-4B15-8766-3CF1C58F985A}")})
+        providers = [ProviderInfo('Microsoft-Windows-WinINet',
+                                  GUID("{43D1A55C-76D6-4F7E-995C-64C711E5CAFE}")),
+                     ProviderInfo('Microsoft-Windows-Kernel-Process',
+                                  GUID("{22FB2CD6-0E7B-422B-A0C7-2FAD1FD0E716}"))]
 
-        # add provider
-        capture.add_provider({'Microsoft-Windows-WMI-Activity': GUID("{1418EF04-B0B4-4623-BF7E-D74AB47BBDAA}")})
+        capture = ETW(providers=providers,
+                      event_callback=lambda event_tufo: self.event_tufo_list.append(event_tufo))
 
-        capture.start(lambda event_tufo: self.event_tufo_list.append(event_tufo), None)
+        capture.start()
 
         # start powershell
         args = ['powershell']
@@ -134,37 +172,26 @@ class TestETW(unittest.TestCase):
         time.sleep(5)
         p.kill()
 
-        # do wmi query
-        w = wmi.WMI()
-        w.init()
-        w.connect('root\\cimv2')
-        enum = w.do_query('SELECT * FROM Win32_Process')
-        enum.vtbl.Release(enum.this)
-        w.fini()
+        self.makeRequest()
 
         # Stop the ETW instance
         capture.stop()
 
-        # check for powershell capture
-        event = self.find_event('POWERSHELL CONSOLE STARTUP')
+        # check for process start
+        event = self.find_event('PROCESSSTART')
         self.assertTrue(event)
         event = self.trim_fields(event)
 
-        # This event should have 1 field
-        self.assertEqual(len(event), 1)
+        # This event should have 6 fields
+        self.assertEqual(len(event), 6)
 
-        # check capture
-        events = self.find_all_events('MICROSOFT-WINDOWS-WMI-ACTIVITY')
-        found = False
-        for event in events:
-            try:
-                if 'SELECT * FROM Win32_Process' in str(event['Operation']):
-                    found = True
-                    break
-            except:
-                pass
+        event = self.find_event('WININET_READDATA')
+        self.assertTrue(event)
+        event = self.trim_fields(event)
 
-        self.assertTrue(found)
+        # This event should have 3 fields
+        self.assertEqual(len(event), 3)
+
         self.event_tufo = []
 
         return
@@ -176,23 +203,23 @@ class TestETW(unittest.TestCase):
         :return: None
         """
 
-        # Instantiate an ETW object
-        capture = etw.ETW(
-            {'Microsoft-Windows-PowerShell': GUID("{A0C1853B-5C40-4B15-8766-3CF1C58F985A}")},
-            any_keywords=['Runspace'],
-            all_keywords=['Pipeline'])
+        # Instantiate an ProviderInfo object
+        provider = ProviderInfo('Microsoft-Windows-Kernel-Process',
+                                GUID("{22FB2CD6-0E7B-422B-A0C7-2FAD1FD0E716}"),
+                                any_keywords=['WINEVENT_KEYWORD_PROCESS'],
+                                all_keywords=['WINEVENT_KEYWORD_THREAD'])
 
-        assert(capture.guids['Microsoft-Windows-PowerShell'][1] == 0x0000000000000001)
-        assert(capture.guids['Microsoft-Windows-PowerShell'][2] == 0x0000000000000002)
+        assert(provider.any_bitmask == 0x0000000000000010)
+        assert(provider.all_bitmask == 0x0000000000000020)
 
         # add provider
-        capture.add_provider(
-            {'Microsoft-Windows-WMI-Activity': GUID("{1418EF04-B0B4-4623-BF7E-D74AB47BBDAA}")},
-            any_keywords=['Microsoft-Windows-WMI-Activity/Trace'],
-            all_keywords=['Microsoft-Windows-WMI-Activity/Operational'])
+        provider = ProviderInfo('Microsoft-Windows-WinINet',
+                                GUID("{43D1A55C-76D6-4F7E-995C-64C711E5CAFE}"),
+                                any_keywords=['WININET_KEYWORD_HANDLES'],
+                                all_keywords=['WININET_KEYWORD_HTTP'])
 
-        assert(capture.guids['Microsoft-Windows-WMI-Activity'][1] == 0x8000000000000000)
-        assert(capture.guids['Microsoft-Windows-WMI-Activity'][2] == 0x4000000000000000)
+        assert(provider.any_bitmask == 0x0000000000000001)
+        assert(provider.all_bitmask == 0x0000000000000002)
 
         return
 
@@ -203,9 +230,85 @@ class TestETW(unittest.TestCase):
         :return: None
         """
 
-        assert(etw.get_keywords_bitmask(
+        assert(get_keywords_bitmask(
             GUID('{9E814AAD-3204-11D2-9A82-006008A86939}'),
             ['process']) == 0x0000000000000001)
+
+        return
+
+    def test_etw_nt_logger(self):
+        """
+        Tests to ensure nt kernel logger capture works properly
+
+        :return: None
+        """
+
+        capture = ETW(session_name='NT Kernel Logger',
+                      providers=[ProviderInfo('Windows Kernel Trace',
+                                              GUID("{9E814AAD-3204-11D2-9A82-006008A86939}"),
+                                              any_keywords=['process'])],
+                      event_callback=lambda event_tufo: self.event_tufo_list.append(event_tufo))
+        capture.start()
+
+        # start powershell
+        args = ['powershell']
+        p = sp.Popen(args, stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+        time.sleep(2)
+        p.kill()
+        capture.stop()
+
+        event = self.find_event('PROCESS')
+        self.assertTrue(event)
+        event = self.trim_fields(event)
+
+        # This event should have 10 fields
+        self.assertEqual(len(event), 10)
+        self.event_tufo = []
+        return
+
+    def test_etw_eq(self):
+        """
+        Test container classes comparision
+
+        :return: None
+        """
+
+        params = et.ENABLE_TRACE_PARAMETERS()
+        params.Version = 1
+        other_params = et.ENABLE_TRACE_PARAMETERS()
+        other_params.Version = 1
+
+        provider = ProviderInfo('Microsoft-Windows-Kernel-Process',
+                                GUID("{22FB2CD6-0E7B-422B-A0C7-2FAD1FD0E716}"),
+                                any_keywords=['WINEVENT_KEYWORD_PROCESS'],
+                                params=ct.pointer(params))
+
+        other_provider = ProviderInfo('Microsoft-Windows-Kernel-Process',
+                                      GUID("{22FB2CD6-0E7B-422B-A0C7-2FAD1FD0E716}"),
+                                      any_keywords=['WINEVENT_KEYWORD_PROCESS'],
+                                      params=ct.pointer(other_params))
+        self.assertEqual(provider, other_provider)
+        other_params.Version = 2
+        self.assertNotEqual(provider, other_provider)
+        event_id_list = [54]
+        event_filter = ep.EVENT_FILTER_EVENT_ID(common.TRUE, event_id_list).get()
+        event_filters = [ep.EVENT_FILTER_DESCRIPTOR(ct.addressof(event_filter.contents),
+                                                    ct.sizeof(event_filter.contents) +
+                                                    ct.sizeof(wt.USHORT) * len(event_id_list),
+                                                    ep.EVENT_FILTER_TYPE_EVENT_ID)]
+        properties = ProviderParameters(0, event_filters)
+        other_properties = ProviderParameters(0, event_filters)
+        self.assertEqual(properties, other_properties)
+
+        other_properties.get().contents.Version = 1
+        self.assertNotEqual(properties, other_properties)
+
+        params = TraceProperties(1024, 1024, 0, 10)
+        other_params = TraceProperties(1024, 1024, 0, 10)
+        self.assertEqual(params, other_params)
+        other_params.get().contents.BufferSize = 1025
+
+        self.assertNotEqual(params, other_params)
 
         return
 

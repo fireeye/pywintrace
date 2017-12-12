@@ -19,12 +19,12 @@ import etw
 
 
 def some_func():
-    # define capture GUID
-    guid = {'Some Provider': etw.GUID("{11111111-1111-1111-1111-111111111111}")}
+    # define capture provider info
+    providers = [etw.ProviderInfo('Some Provider', etw.GUID("{11111111-1111-1111-1111-111111111111}"))]
     # create instance of ETW class
-    job = etw.ETW(guid)
+    job = etw.ETW(providers=providers, event_callback=lambda x: print(x))
     # start capture
-    job.start(lambda x: print(x))
+    job.start()
 
     # wait some time
     time.sleep(5)

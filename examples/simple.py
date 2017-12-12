@@ -18,14 +18,13 @@ import etw
 
 
 def some_func():
-    # define capture GUID
-    guid = {'Some Provider': etw.GUID("{11111111-1111-1111-1111-111111111111}")}
+    # define capture provider info
+    providers = [etw.ProviderInfo('Some Provider', etw.GUID("{11111111-1111-1111-1111-111111111111}"))]
 
-    # create instance of ETW class
-    job = etw.ETW(guid)
-
-    # run capture
-    etw.run('etw', job)
+    # create instance of ETW and start capture
+    with etw.ETW(providers=providers, event_callback=etw.on_event_callback):
+        # run capture
+        etw.run('etw')
 
 
 if __name__ == '__main__':
