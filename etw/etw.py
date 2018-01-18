@@ -235,6 +235,7 @@ class EventConsumer:
                  task_name_filters,
                  event_id_filters,
                  callback_data_flag,
+                 parse_events=True,
                  trace_logfile=None):
         """
         Initializes a real time event consumer object.
@@ -256,6 +257,7 @@ class EventConsumer:
         self.task_name_filters = task_name_filters
         self.event_id_filters = event_id_filters
         self.callback_data_flag = callback_data_flag
+        self.parse_events = parse_events
 
         if not trace_logfile:
             # Construct the EVENT_TRACE_LOGFILE structure
@@ -611,6 +613,10 @@ class EventConsumer:
         :return: Nothing
         """
 
+        if not self.parse_events:
+            self.event_callback((0, record))
+            return
+
         event_id = record.contents.EventHeader.EventDescriptor.Id
         if self.event_id_filters and event_id not in self.event_id_filters:
             return
@@ -741,6 +747,7 @@ class ETW:
             ignore_exists_error=True,
             event_id_filters=None,
             callback_data_flag=0,
+            parse_events=True,
             trace_logfile=None):
         """
         Initializes an instance of the ETW class. The default buffer parameters represent a very typical use case and
@@ -801,6 +808,7 @@ class ETW:
         self.event_callback = event_callback
         self.ignore_exists_error = ignore_exists_error
         self.callback_data_flag = callback_data_flag
+        self.parse_events = parse_events
         self.trace_logfile = trace_logfile
 
     def __enter__(self):
@@ -834,6 +842,7 @@ class ETW:
                                           self.task_name_filters,
                                           self.event_id_filters,
                                           self.callback_data_flag,
+                                          self.parse_events,
                                           self.trace_logfile)
             self.consumer.start()
 
