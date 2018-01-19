@@ -30,7 +30,7 @@ from etw import evntcons as ec
 from etw import wmistr as ws
 from etw import tdh as tdh
 from etw.common import rel_ptr_to_str, MAX_UINT, ETWException, RETURN_RAW_DATA_ONLY, RETURN_RAW_DATA_ON_ERROR, \
-    RETURN_ONLY_RAW_DATA_ON_ERROR, RETURN_UNFORMATTED_DATA
+    RETURN_ONLY_RAW_DATA_ON_ERROR, RETURN_RAW_UNFORMATTED_DATA
 
 logger = logging.getLogger(__name__)
 
@@ -615,7 +615,7 @@ class EventConsumer:
         field_parse_error = False
         raw_msg = True
 
-        if self.callback_data_flag == RETURN_UNFORMATTED_DATA:
+        if self.callback_data_flag == RETURN_RAW_UNFORMATTED_DATA:
             event_id = 0
             out = record
         else:
@@ -718,7 +718,7 @@ class EventConsumer:
                 ((self.callback_data_flag == RETURN_RAW_DATA_ON_ERROR or
                     self.callback_data_flag == RETURN_ONLY_RAW_DATA_ON_ERROR) and
                     (field_parse_error is True or raw_msg is True)) or \
-                    (self.callback_data_flag == RETURN_UNFORMATTED_DATA and raw_msg is True) or\
+                    (self.callback_data_flag == RETURN_RAW_UNFORMATTED_DATA and raw_msg is True) or\
                     (self.callback_data_flag == 0 and raw_msg is False):
 
                 if self.event_callback:
