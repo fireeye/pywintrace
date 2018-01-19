@@ -30,7 +30,7 @@ from etw import evntcons as ec
 from etw import wmistr as ws
 from etw import tdh as tdh
 from etw.common import rel_ptr_to_str, MAX_UINT, ETWException, RETURN_RAW_DATA_ONLY, RETURN_RAW_DATA_ON_ERROR, \
-    RETURN_ONLY_RAW_DATA_ON_ERROR
+    RETURN_ONLY_RAW_DATA_ON_ERROR, RETURN_UNFORMATTED_DATA
 
 logger = logging.getLogger(__name__)
 
@@ -611,90 +611,96 @@ class EventConsumer:
         :return: Nothing
         """
 
-        event_id = record.contents.EventHeader.EventDescriptor.Id
-        if self.event_id_filters and event_id not in self.event_id_filters:
-            return
-        # set task name to provider guid for the time being
-        task_name = str(record.contents.EventHeader.ProviderId)
-
-        # add all header fields from EVENT_HEADER structure
-        # https://msdn.microsoft.com/en-us/library/windows/desktop/aa363759(v=vs.85).aspx
-        out = {'EventHeader': {
-            'Size': record.contents.EventHeader.Size,
-            'HeaderType': record.contents.EventHeader.HeaderType,
-            'Flags': record.contents.EventHeader.Flags,
-            'EventProperty': record.contents.EventHeader.EventProperty,
-            'ThreadId': record.contents.EventHeader.ThreadId,
-            'ProcessId': record.contents.EventHeader.ProcessId,
-            'TimeStamp': record.contents.EventHeader.TimeStamp,
-            'ProviderId': task_name,
-            'EventDescriptor': {'Id': event_id,
-                                'Version': record.contents.EventHeader.EventDescriptor.Version,
-                                'Channel': record.contents.EventHeader.EventDescriptor.Channel,
-                                'Level': record.contents.EventHeader.EventDescriptor.Level,
-                                'Opcode': record.contents.EventHeader.EventDescriptor.Opcode,
-                                'Task': record.contents.EventHeader.EventDescriptor.Task,
-                                'Keyword':
-                                    record.contents.EventHeader.EventDescriptor.Keyword},
-            'KernelTime': record.contents.EventHeader.KernelTime,
-            'UserTime': record.contents.EventHeader.UserTime,
-            'ActivityId': str(record.contents.EventHeader.ActivityId)},
-            'Task Name': task_name}
         parsed_data = {}
         field_parse_error = False
         raw_msg = True
-        if self.callback_data_flag != RETURN_RAW_DATA_ONLY:
-            try:
-                info = self._getEventInformation(record)
 
-                # Some events do not have an associated task_name value. In this case, we should use the provider name
-                # instead.
-                if info.contents.TaskNameOffset == 0:
-                    task_name = rel_ptr_to_str(info, info.contents.ProviderNameOffset)
-                else:
-                    task_name = rel_ptr_to_str(info, info.contents.TaskNameOffset)
+        if self.callback_data_flag == RETURN_UNFORMATTED_DATA:
+            event_id = 0
+            out = record
+        else:
+            event_id = record.contents.EventHeader.EventDescriptor.Id
+            if self.event_id_filters and event_id not in self.event_id_filters:
+                return
+            # set task name to provider guid for the time being
+            task_name = str(record.contents.EventHeader.ProviderId)
 
-                task_name = task_name.strip().upper()
+            # add all header fields from EVENT_HEADER structure
+            # https://msdn.microsoft.com/en-us/library/windows/desktop/aa363759(v=vs.85).aspx
+            out = {'EventHeader': {
+                'Size': record.contents.EventHeader.Size,
+                'HeaderType': record.contents.EventHeader.HeaderType,
+                'Flags': record.contents.EventHeader.Flags,
+                'EventProperty': record.contents.EventHeader.EventProperty,
+                'ThreadId': record.contents.EventHeader.ThreadId,
+                'ProcessId': record.contents.EventHeader.ProcessId,
+                'TimeStamp': record.contents.EventHeader.TimeStamp,
+                'ProviderId': task_name,
+                'EventDescriptor': {'Id': event_id,
+                                    'Version': record.contents.EventHeader.EventDescriptor.Version,
+                                    'Channel': record.contents.EventHeader.EventDescriptor.Channel,
+                                    'Level': record.contents.EventHeader.EventDescriptor.Level,
+                                    'Opcode': record.contents.EventHeader.EventDescriptor.Opcode,
+                                    'Task': record.contents.EventHeader.EventDescriptor.Task,
+                                    'Keyword':
+                                        record.contents.EventHeader.EventDescriptor.Keyword},
+                'KernelTime': record.contents.EventHeader.KernelTime,
+                'UserTime': record.contents.EventHeader.UserTime,
+                'ActivityId': str(record.contents.EventHeader.ActivityId)},
+                'Task Name': task_name}
 
-                # Add a description for the event
-                description = rel_ptr_to_str(info, info.contents.EventMessageOffset)
+            if self.callback_data_flag != RETURN_RAW_DATA_ONLY:
+                try:
+                    info = self._getEventInformation(record)
 
-                # Windows 7 does not support predicate filters. Instead, we use a whitelist to filter things on the
-                # consumer.
-                if self.task_name_filters and task_name not in self.task_name_filters:
-                    return
-
-                user_data = record.contents.UserData
-                if user_data is None:
-                    user_data = 0
-
-                end_of_user_data = user_data + record.contents.UserDataLength
-                self.index = 0
-                self.vfield_length = None
-                property_array = ct.cast(info.contents.EventPropertyInfoArray, ct.POINTER(tdh.EVENT_PROPERTY_INFO))
-
-                for i in range(info.contents.TopLevelPropertyCount):
-                    # If the user_data is the same value as the end_of_user_data, we are ending with a 0-length
-                    # field. Though not documented, this is completely valid.
-                    if user_data == end_of_user_data:
-                        break
-
-                    # Determine whether we are processing a simple type or a complex type and act accordingly
-                    if property_array[i].Flags & tdh.PropertyStruct:
-                        field = self._unpackComplexType(record, info, property_array[i])
+                    # Some events do not have an associated task_name value. In this case, we should use the provider
+                    # name instead.
+                    if info.contents.TaskNameOffset == 0:
+                        task_name = rel_ptr_to_str(info, info.contents.ProviderNameOffset)
                     else:
-                        field = self._unpackSimpleType(record, info, property_array[i])
+                        task_name = rel_ptr_to_str(info, info.contents.TaskNameOffset)
 
-                    if field == {} or None in field.values():
-                        field_parse_error = True
-                    parsed_data.update(field)
+                    task_name = task_name.strip().upper()
 
-                # Add the description field in
-                parsed_data['Description'] = description
-                parsed_data['Task Name'] = task_name
-                raw_msg = False
-            except Exception as e:
-                logger.warning('Unable to parse event: {}'.format(e))
+                    # Add a description for the event
+                    description = rel_ptr_to_str(info, info.contents.EventMessageOffset)
+
+                    # Windows 7 does not support predicate filters. Instead, we use a whitelist to filter things on the
+                    # consumer.
+                    if self.task_name_filters and task_name not in self.task_name_filters:
+                        return
+
+                    user_data = record.contents.UserData
+                    if user_data is None:
+                        user_data = 0
+
+                    end_of_user_data = user_data + record.contents.UserDataLength
+                    self.index = 0
+                    self.vfield_length = None
+                    property_array = ct.cast(info.contents.EventPropertyInfoArray, ct.POINTER(tdh.EVENT_PROPERTY_INFO))
+
+                    for i in range(info.contents.TopLevelPropertyCount):
+                        # If the user_data is the same value as the end_of_user_data, we are ending with a 0-length
+                        # field. Though not documented, this is completely valid.
+                        if user_data == end_of_user_data:
+                            break
+
+                        # Determine whether we are processing a simple type or a complex type and act accordingly
+                        if property_array[i].Flags & tdh.PropertyStruct:
+                            field = self._unpackComplexType(record, info, property_array[i])
+                        else:
+                            field = self._unpackSimpleType(record, info, property_array[i])
+
+                        if field == {} or None in field.values():
+                            field_parse_error = True
+                        parsed_data.update(field)
+
+                    # Add the description field in
+                    parsed_data['Description'] = description
+                    parsed_data['Task Name'] = task_name
+                    raw_msg = False
+                except Exception as e:
+                    logger.warning('Unable to parse event: {}'.format(e))
 
         try:
             if self.callback_data_flag == RETURN_RAW_DATA_ONLY or \
