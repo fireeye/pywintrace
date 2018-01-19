@@ -718,6 +718,7 @@ class EventConsumer:
                 ((self.callback_data_flag == RETURN_RAW_DATA_ON_ERROR or
                     self.callback_data_flag == RETURN_ONLY_RAW_DATA_ON_ERROR) and
                     (field_parse_error is True or raw_msg is True)) or \
+                    (self.callback_data_flag == RETURN_UNFORMATTED_DATA and raw_msg is True) or\
                     (self.callback_data_flag == 0 and raw_msg is False):
 
                 if self.event_callback:
