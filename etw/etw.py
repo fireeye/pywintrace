@@ -709,19 +709,16 @@ class EventConsumer:
                 out['UserData'] = b''.join([ct.cast(record.contents.UserData + i, wt.PBYTE).contents
                                             for i in range(record.contents.UserDataLength)])
 
-            if (self.callback_data_flag == RETURN_RAW_DATA_ON_ERROR and field_parse_error is True) or \
-                    self.callback_data_flag == 0:
+            if (self.callback_data_flag == RETURN_ONLY_RAW_DATA_ON_ERROR and field_parse_error is False) or \
+               self.callback_data_flag == RETURN_RAW_DATA_ON_ERROR or self.callback_data_flag == 0:
                 out.update(parsed_data)
 
             # Call the user's specified callback function
-            if (self.callback_data_flag == RETURN_RAW_DATA_ONLY and raw_msg is True) or \
-                ((self.callback_data_flag == RETURN_RAW_DATA_ON_ERROR or
-                    self.callback_data_flag == RETURN_ONLY_RAW_DATA_ON_ERROR) and
-                    (field_parse_error is True or raw_msg is True)) or \
-                    (self.callback_data_flag == RETURN_RAW_UNFORMATTED_DATA and raw_msg is True) or\
-                    (self.callback_data_flag == 0 and raw_msg is False):
-
-                if self.event_callback:
+            if ((self.callback_data_flag == RETURN_RAW_DATA_ONLY and raw_msg is True) or
+                self.callback_data_flag == RETURN_RAW_DATA_ON_ERROR or
+                self.callback_data_flag == RETURN_ONLY_RAW_DATA_ON_ERROR or
+               (self.callback_data_flag == RETURN_RAW_UNFORMATTED_DATA and raw_msg is True) or
+               (self.callback_data_flag == 0 and raw_msg is False)) and self.event_callback:
                     self.event_callback((event_id, out))
         except Exception as e:
             logger.error('Exception during callback: {}'.format(e))
