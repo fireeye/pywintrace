@@ -829,8 +829,8 @@ class ETW:
             try:
                 self.provider.start()
             except WindowsError as wex:
-                if (ct.GetLastError() == tdh.ERROR_ALREADY_EXISTS and not self.ignore_exists_error) or \
-                                ct.GetLastError() != tdh.ERROR_ALREADY_EXISTS:
+                if (wex.winerror == tdh.ERROR_ALREADY_EXISTS and not self.ignore_exists_error) or \
+                   wex.winerror != tdh.ERROR_ALREADY_EXISTS:
                     raise wex
 
             # Start the consumer
