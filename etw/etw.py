@@ -168,7 +168,7 @@ class EventProvider:
 
         status = et.StartTraceW(ct.byref(self.session_handle), self.session_name, self.session_properties.get())
         if status != tdh.ERROR_SUCCESS:
-            raise ct.WinError()
+            raise ct.WinError(status)
 
         if self.kernel_trace is False:
             for provider in self.providers:
@@ -185,7 +185,7 @@ class EventProvider:
                                            0,
                                            provider.params)
                 if status != tdh.ERROR_SUCCESS:
-                    raise ct.WinError()
+                    raise ct.WinError(status)
 
     def stop(self):
         """
@@ -208,14 +208,14 @@ class EventProvider:
                                            0,
                                            None)
                 if status != tdh.ERROR_SUCCESS:
-                    raise ct.WinError()
+                    raise ct.WinError(status)
 
         status = et.ControlTraceW(self.session_handle,
                                   self.session_name,
                                   self.session_properties.get(),
                                   et.EVENT_TRACE_CONTROL_STOP)
         if status != tdh.ERROR_SUCCESS:
-            raise ct.WinError()
+            raise ct.WinError(status)
         et.CloseTrace(self.session_handle)
 
 
@@ -342,7 +342,7 @@ class EventConsumer:
             status = tdh.TdhGetEventInformation(record, 0, None, info, ct.byref(buffer_size))
 
         if tdh.ERROR_SUCCESS != status:
-            raise ct.WinError()
+            raise ct.WinError(status)
 
         return info
 
@@ -371,11 +371,11 @@ class EventConsumer:
 
             status = tdh.TdhGetPropertySize(record, 0, None, 1, ct.byref(data_descriptor), ct.byref(property_size))
             if tdh.ERROR_SUCCESS != status:
-                raise ct.WinError()
+                raise ct.WinError(status)
 
             status = tdh.TdhGetProperty(record, 0, None, 1, ct.byref(data_descriptor), property_size, ct.byref(count))
             if tdh.ERROR_SUCCESS != status:
-                raise ct.WinError()
+                raise ct.WinError(status)
             return count
 
         if flags & tdh.PropertyParamFixedCount:
@@ -410,7 +410,7 @@ class EventConsumer:
 
             status = tdh.TdhGetPropertySize(record, 0, None, 1, ct.byref(data_descriptor), ct.byref(property_size))
             if tdh.ERROR_SUCCESS != status:
-                raise ct.WinError()
+                raise ct.WinError(status)
 
             status = tdh.TdhGetProperty(record,
                                         0,
@@ -420,7 +420,7 @@ class EventConsumer:
                                         property_size,
                                         ct.cast(ct.byref(length), ct.POINTER(ct.c_byte)))
             if tdh.ERROR_SUCCESS != status:
-                raise ct.WinError()
+                raise ct.WinError(status)
             return length.value
 
         in_type = event_property.epi_u1.nonStructType.InType
@@ -829,7 +829,8 @@ class ETW:
             try:
                 self.provider.start()
             except WindowsError as wex:
-                if ct.GetLastError() == tdh.ERROR_ALREADY_EXISTS and not self.ignore_exists_error:
+                if (ct.GetLastError() == tdh.ERROR_ALREADY_EXISTS and not self.ignore_exists_error) or \
+                                ct.GetLastError() != tdh.ERROR_ALREADY_EXISTS:
                     raise wex
 
             # Start the consumer
@@ -1027,7 +1028,7 @@ def get_keywords_bitmask(guid, keywords):
             ct.byref(providers_size))
 
     if tdh.ERROR_SUCCESS != status and tdh.ERROR_NOT_FOUND != status:
-        raise ct.WinError()
+        raise ct.WinError(status)
 
     if provider_info:
         field_info_array = ct.cast(provider_info.contents.FieldInfoArray, ct.POINTER(tdh.PROVIDER_FIELD_INFO))
