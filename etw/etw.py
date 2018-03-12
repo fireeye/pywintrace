@@ -662,8 +662,11 @@ class EventConsumer:
 
                     task_name = task_name.strip().upper()
 
-                    # Add a description for the event
-                    description = rel_ptr_to_str(info, info.contents.EventMessageOffset)
+                    # Add a description for the event, if present
+                    if info.contents.EventMessageOffset:
+                        description = rel_ptr_to_str(info, info.contents.EventMessageOffset)
+                    else:
+                        description = ''
 
                     # Windows 7 does not support predicate filters. Instead, we use a whitelist to filter things on the
                     # consumer.
