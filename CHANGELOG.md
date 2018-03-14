@@ -1,3 +1,9 @@
+v0.1.1
+------
+- Fixed description parsing error
+- Added flag for raw data only
+- Added callback flag check in EventConsumer
+
 v0.1.0
 ------
 - Refactored ETW class
