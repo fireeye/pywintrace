@@ -21,7 +21,7 @@ import ctypes.wintypes as wt
 import subprocess as sp
 
 from etw import ETW, ProviderInfo
-from etw.etw import TraceProperties, ProviderParameters
+from etw.etw import TraceProperties, ProviderParameters, EventConsumer
 from etw.GUID import GUID
 from etw import evntrace as et
 from etw import evntprov as ep
@@ -166,8 +166,8 @@ class TestETW(unittest.TestCase):
 
         capture.start()
 
-        # start powershell
-        args = ['powershell']
+        # start ping
+        args = ['ping.exe']
         p = sp.Popen(args, stdout=sp.DEVNULL, stderr=sp.DEVNULL)
         time.sleep(5)
         p.kill()
@@ -250,8 +250,8 @@ class TestETW(unittest.TestCase):
                       event_callback=lambda event_tufo: self.event_tufo_list.append(event_tufo))
         capture.start()
 
-        # start powershell
-        args = ['powershell']
+        # start ping.exe
+        args = ['ping.exe']
         p = sp.Popen(args, stdout=sp.DEVNULL, stderr=sp.DEVNULL)
         time.sleep(2)
         p.kill()
@@ -311,6 +311,30 @@ class TestETW(unittest.TestCase):
         self.assertNotEqual(params, other_params)
 
         return
+
+    def test_callback_flag_good(self):
+        """
+        Test to check good flag value
+
+        :return: None
+        """
+        self.assertNotEqual(EventConsumer('test', None, None, None, common.RETURN_RAW_DATA_ONLY), None)
+        self.assertNotEqual(EventConsumer('test', None, None, None, common.RETURN_RAW_DATA_ON_ERROR), None)
+        self.assertNotEqual(EventConsumer('test', None, None, None, common.RETURN_ONLY_RAW_DATA_ON_ERROR), None)
+        self.assertNotEqual(EventConsumer('test', None, None, None, common.RETURN_RAW_UNFORMATTED_DATA), None)
+
+    def test_callback_flag_bad(self):
+        """
+        Test to check bad flag value
+
+        :return: None
+        """
+        consumer = None
+        try:
+            consumer = EventConsumer('test', None, None, None, 1234)
+        except:
+            pass
+        self.assertEqual(consumer, None)
 
 
 if __name__ == '__main__':

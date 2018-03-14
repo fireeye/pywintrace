@@ -36,10 +36,12 @@ if sys.version_info < (3, 4):
 
 
 setup(name='wintrace',
-      version='0.1.0',
+      version='0.1.1',
       description='ETW Tracing',
       author='Anthony Berglund',
+      author_email='anthony.berglund@fireeye.com',
       url='https://github.com/fireeye/pywintrace',
+      download_url='https://github.com/fireeye/pywintrace/archive/v0.1.1.tar.gz',
       platforms=['Windows'],
       license='Apache',
       packages=['etw'],
