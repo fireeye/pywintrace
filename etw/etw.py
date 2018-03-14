@@ -255,7 +255,7 @@ class EventConsumer:
         self.index = 0
         self.task_name_filters = task_name_filters
         self.event_id_filters = event_id_filters
-        self.callback_data_flag = callback_data_flag
+        self.callback_data_flag = callback_data_flag if not callback_data_flag else self.check_callback_flag(callback_data_flag)  # NOQA
 
         if not trace_logfile:
             # Construct the EVENT_TRACE_LOGFILE structure
@@ -305,6 +305,21 @@ class EventConsumer:
         # If ProcessThread is actively parsing an event, we want to give it a chance to finish
         # before pulling the rug out from underneath it.
         self.process_thread.join()
+
+    @staticmethod
+    def check_callback_flag(flag):
+        """
+        Checks callback flags.
+
+        :return: Returns flags on success, on failure raises exception
+        """
+        flags = [RETURN_RAW_DATA_ONLY,
+                 RETURN_RAW_DATA_ON_ERROR,
+                 RETURN_ONLY_RAW_DATA_ON_ERROR,
+                 RETURN_RAW_UNFORMATTED_DATA]
+        if flag not in flags:
+            raise Exception('Callback flag value {:d} passed into EventConsumer is invalid'.format(flag))
+        return flag
 
     @staticmethod
     def _run(trace_handle, end_capture):
@@ -613,7 +628,6 @@ class EventConsumer:
 
         parsed_data = {}
         field_parse_error = False
-        raw_msg = True
 
         if self.callback_data_flag == RETURN_RAW_UNFORMATTED_DATA:
             event_id = 0
@@ -701,7 +715,6 @@ class EventConsumer:
                     # Add the description field in
                     parsed_data['Description'] = description
                     parsed_data['Task Name'] = task_name
-                    raw_msg = False
                 except Exception as e:
                     logger.warning('Unable to parse event: {}'.format(e))
 
@@ -717,12 +730,9 @@ class EventConsumer:
                 out.update(parsed_data)
 
             # Call the user's specified callback function
-            if ((self.callback_data_flag == RETURN_RAW_DATA_ONLY and raw_msg is True) or
-                self.callback_data_flag == RETURN_RAW_DATA_ON_ERROR or
-                self.callback_data_flag == RETURN_ONLY_RAW_DATA_ON_ERROR or
-               (self.callback_data_flag == RETURN_RAW_UNFORMATTED_DATA and raw_msg is True) or
-               (self.callback_data_flag == 0 and raw_msg is False)) and self.event_callback:
+            if self.event_callback:
                     self.event_callback((event_id, out))
+
         except Exception as e:
             logger.error('Exception during callback: {}'.format(e))
             logger.error(traceback.format_exc())
