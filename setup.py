@@ -35,7 +35,7 @@ if sys.version_info < (3, 4):
     exit(-1)
 
 
-setup(name='wintrace',
+setup(name='pywintrace',
       version='0.1.1',
       description='ETW Tracing',
       author='Anthony Berglund',
