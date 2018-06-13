@@ -18,6 +18,7 @@
 import threading
 import logging
 import uuid
+import time
 import traceback
 import ctypes as ct
 import ctypes.wintypes as wt
@@ -235,6 +236,7 @@ class EventConsumer:
                  task_name_filters,
                  event_id_filters,
                  callback_data_flag,
+                 callback_cooloff_time,
                  trace_logfile=None):
         """
         Initializes a real time event consumer object.
@@ -244,6 +246,7 @@ class EventConsumer:
         :param task_name_filters: List of filters to apply to the ETW capture
         :param event_id_filters: List of event ids to filter on.
         :param callback_data_flag: Determines how to format data passed into callback.
+        :param callback_cooloff_time: Time callback will sleep when called.
         :param trace_logfile: EVENT_TRACE_LOGFILE structure.
         """
         self.trace_handle = None
@@ -256,7 +259,8 @@ class EventConsumer:
         self.task_name_filters = task_name_filters
         self.event_id_filters = event_id_filters
         self.callback_data_flag = callback_data_flag if not callback_data_flag else self.check_callback_flag(callback_data_flag)  # NOQA
-
+        self.callback_cooloff_time = callback_cooloff_time
+        
         if not trace_logfile:
             # Construct the EVENT_TRACE_LOGFILE structure
             self.trace_logfile = et.EVENT_TRACE_LOGFILE()
@@ -626,6 +630,9 @@ class EventConsumer:
         :return: Nothing
         """
 
+        if self.callback_cooloff_time:
+            time.sleep(self.callback_cooloff_time)
+        
         parsed_data = {}
         field_parse_error = False
 
@@ -731,12 +738,11 @@ class EventConsumer:
 
             # Call the user's specified callback function
             if self.event_callback:
-                    self.event_callback((event_id, out))
+                self.event_callback((event_id, out))
 
         except Exception as e:
             logger.error('Exception during callback: {}'.format(e))
             logger.error(traceback.format_exc())
-        return
 
 
 class ETW:
@@ -758,6 +764,7 @@ class ETW:
             ignore_exists_error=True,
             event_id_filters=None,
             callback_data_flag=0,
+            callback_cooloff_time=0.0,
             trace_logfile=None):
         """
         Initializes an instance of the ETW class. The default buffer parameters represent a very typical use case and
@@ -781,6 +788,7 @@ class ETW:
                                     EventProvider start.
         :param event_id_filters: List of event ids to filter on.
         :param callback_data_flag: Determines how to format data passed into callback.
+        :param callback_cooloff_time: Time callback will sleep when called.
         :param trace_logfile: EVENT_TRACE_LOGFILE structure to be passed to the consumer.
         """
 
@@ -818,6 +826,7 @@ class ETW:
         self.event_callback = event_callback
         self.ignore_exists_error = ignore_exists_error
         self.callback_data_flag = callback_data_flag
+        self.callback_cooloff_time = callback_cooloff_time
         self.trace_logfile = trace_logfile
 
     def __enter__(self):
@@ -852,6 +861,7 @@ class ETW:
                                           self.task_name_filters,
                                           self.event_id_filters,
                                           self.callback_data_flag,
+                                          self.callback_cooloff_time,
                                           self.trace_logfile)
             self.consumer.start()
 
