@@ -236,7 +236,7 @@ class EventConsumer:
                  task_name_filters,
                  event_id_filters,
                  callback_data_flag,
-                 callback_cooloff_time,
+                 callback_wait_time,
                  trace_logfile=None):
         """
         Initializes a real time event consumer object.
@@ -246,7 +246,7 @@ class EventConsumer:
         :param task_name_filters: List of filters to apply to the ETW capture
         :param event_id_filters: List of event ids to filter on.
         :param callback_data_flag: Determines how to format data passed into callback.
-        :param callback_cooloff_time: Time callback will sleep when called.
+        :param callback_wait_time: Time callback will sleep when called.
         :param trace_logfile: EVENT_TRACE_LOGFILE structure.
         """
         self.trace_handle = None
@@ -259,7 +259,7 @@ class EventConsumer:
         self.task_name_filters = task_name_filters
         self.event_id_filters = event_id_filters
         self.callback_data_flag = callback_data_flag if not callback_data_flag else self.check_callback_flag(callback_data_flag)  # NOQA
-        self.callback_cooloff_time = callback_cooloff_time
+        self.callback_wait_time = callback_wait_time
         
         if not trace_logfile:
             # Construct the EVENT_TRACE_LOGFILE structure
@@ -630,8 +630,8 @@ class EventConsumer:
         :return: Nothing
         """
 
-        if self.callback_cooloff_time:
-            time.sleep(self.callback_cooloff_time)
+        if self.callback_wait_time:
+            time.sleep(self.callback_wait_time)
         
         parsed_data = {}
         field_parse_error = False
@@ -764,7 +764,7 @@ class ETW:
             ignore_exists_error=True,
             event_id_filters=None,
             callback_data_flag=0,
-            callback_cooloff_time=0.0,
+            callback_wait_time=0.0,
             trace_logfile=None):
         """
         Initializes an instance of the ETW class. The default buffer parameters represent a very typical use case and
@@ -788,7 +788,7 @@ class ETW:
                                     EventProvider start.
         :param event_id_filters: List of event ids to filter on.
         :param callback_data_flag: Determines how to format data passed into callback.
-        :param callback_cooloff_time: Time callback will sleep when called.
+        :param callback_wait_time: Time callback will sleep when called.
         :param trace_logfile: EVENT_TRACE_LOGFILE structure to be passed to the consumer.
         """
 
@@ -826,7 +826,7 @@ class ETW:
         self.event_callback = event_callback
         self.ignore_exists_error = ignore_exists_error
         self.callback_data_flag = callback_data_flag
-        self.callback_cooloff_time = callback_cooloff_time
+        self.callback_wait_time = callback_wait_time
         self.trace_logfile = trace_logfile
 
     def __enter__(self):
@@ -861,7 +861,7 @@ class ETW:
                                           self.task_name_filters,
                                           self.event_id_filters,
                                           self.callback_data_flag,
-                                          self.callback_cooloff_time,
+                                          self.callback_wait_time,
                                           self.trace_logfile)
             self.consumer.start()
 
