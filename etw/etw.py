@@ -235,6 +235,7 @@ class EventConsumer:
                  task_name_filters,
                  event_id_filters,
                  callback_data_flag,
+                 log_file_tag=False,
                  trace_logfile=None):
         """
         Initializes a real time event consumer object.
@@ -244,7 +245,8 @@ class EventConsumer:
         :param task_name_filters: List of filters to apply to the ETW capture
         :param event_id_filters: List of event ids to filter on.
         :param callback_data_flag: Determines how to format data passed into callback.
-        :param trace_logfile: EVENT_TRACE_LOGFILE structure.
+        :param log_file_tag: when consume a local log file, set the tag True.
+        :param trace_logfile_struct: EVENT_TRACE_LOGFILE structure.
         """
         self.trace_handle = None
         self.process_thread = None
@@ -255,19 +257,30 @@ class EventConsumer:
         self.index = 0
         self.task_name_filters = task_name_filters
         self.event_id_filters = event_id_filters
-        self.callback_data_flag = callback_data_flag if not callback_data_flag else self.check_callback_flag(callback_data_flag)  # NOQA
+        self.callback_data_flag = callback_data_flag if not callback_data_flag else self.check_callback_flag(
+            callback_data_flag)  # NOQA
 
         if not trace_logfile:
-            # Construct the EVENT_TRACE_LOGFILE structure
+            # Construct the EVENT_TRACE_LOGFILE structure for real-time event
             self.trace_logfile = et.EVENT_TRACE_LOGFILE()
-            self.trace_logfile.ProcessTraceMode = (ec.PROCESS_TRACE_MODE_REAL_TIME | ec.PROCESS_TRACE_MODE_EVENT_RECORD)
-            self.trace_logfile.LoggerName = logger_name
+            if not log_file_tag:
+                # EVENT_TRACE_LOGFILE structure of real-time event
+                self.trace_logfile.ProcessTraceMode = (
+                            ec.PROCESS_TRACE_MODE_REAL_TIME | ec.PROCESS_TRACE_MODE_EVENT_RECORD)
+                self.trace_logfile.LoggerName = logger_name
+            else:
+                # EVENT_TRACE_LOGFILE structure of a log file
+                self.trace_logfile.ProcessTraceMode = (
+                    ec.PROCESS_TRACE_MODE_EVENT_RECORD)
+                self.trace_logfile.LogFileName = logger_name
         else:
             self.trace_logfile = trace_logfile
 
         if not self.trace_logfile.EventRecordCallback and \
-           self.trace_logfile.ProcessTraceMode & (ec.PROCESS_TRACE_MODE_REAL_TIME | ec.PROCESS_TRACE_MODE_EVENT_RECORD):
-            self.trace_logfile.EventRecordCallback = et.EVENT_RECORD_CALLBACK(self._processEvent)
+                self.trace_logfile.ProcessTraceMode & (
+                ec.PROCESS_TRACE_MODE_REAL_TIME | ec.PROCESS_TRACE_MODE_EVENT_RECORD):
+            self.trace_logfile.EventRecordCallback = et.EVENT_RECORD_CALLBACK(
+                self._processEvent)
 
     def __enter__(self):
         self.start()

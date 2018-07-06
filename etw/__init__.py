@@ -15,6 +15,6 @@
 ########################################################################
 
 from etw.GUID import GUID  # NOQA
-from etw.etw import ETW, ProviderInfo  # NOQA
+from etw.etw import ETW, ProviderInfo, EventConsumer  # NOQA
 from etw.common import run  # NOQA
 from etw.common import on_event_callback  # NOQA
