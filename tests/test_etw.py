@@ -336,6 +336,38 @@ class TestETW(unittest.TestCase):
             pass
         self.assertEqual(consumer, None)
 
+    def test_etw_callback_wait(self):
+        """
+        Tests the etw capture wait time
+
+        :return: None
+        """
+
+        # Instantiate an ETW object
+        capture = ETW(providers=[ProviderInfo('Microsoft-Windows-Kernel-Process',
+                                              GUID("{22FB2CD6-0E7B-422B-A0C7-2FAD1FD0E716}"))],
+                      event_callback=lambda event_tufo: self.event_tufo_list.append(event_tufo),
+                      callback_wait_time=0.0025)
+        capture.start()
+        # start ping
+        args = ['ping.exe']
+        p = sp.Popen(args, stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+        time.sleep(5)
+        p.kill()
+
+        # Stop the ETW instance
+        capture.stop()
+
+        # check for process start
+        event = self.find_event('PROCESSSTART')
+        self.assertTrue(event)
+        event = self.trim_fields(event)
+
+        # This event should have 6 fields
+        self.assertEqual(len(event), 6)
+        self.event_tufo = []
+
+        return
 
 if __name__ == '__main__':
     unittest.main()

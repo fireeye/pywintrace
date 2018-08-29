@@ -232,11 +232,11 @@ class EventConsumer:
 
     def __init__(self,
                  logger_name,
-                 event_callback,
-                 task_name_filters,
-                 event_id_filters,
-                 callback_data_flag,
-                 callback_wait_time,
+                 event_callback=None,
+                 task_name_filters=None,
+                 event_id_filters=None,
+                 callback_data_flag=0,
+                 callback_wait_time=0.0,
                  trace_logfile=None):
         """
         Initializes a real time event consumer object.
@@ -256,8 +256,8 @@ class EventConsumer:
         self.event_callback = event_callback
         self.vfield_length = None
         self.index = 0
-        self.task_name_filters = task_name_filters
-        self.event_id_filters = event_id_filters
+        self.task_name_filters = task_name_filters if task_name_filters else []
+        self.event_id_filters = event_id_filters if event_id_filters else []
         self.callback_data_flag = callback_data_flag if not callback_data_flag else self.check_callback_flag(callback_data_flag)  # NOQA
         self.callback_wait_time = callback_wait_time
         
