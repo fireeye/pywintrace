@@ -246,7 +246,7 @@ class EventConsumer:
         :param task_name_filters: List of filters to apply to the ETW capture
         :param event_id_filters: List of event ids to filter on.
         :param callback_data_flag: Determines how to format data passed into callback.
-        :param callback_wait_time: Time callback will sleep when called.
+        :param callback_wait_time: Time callback will sleep when called. If used, this may cause events to be dropped.
         :param trace_logfile: EVENT_TRACE_LOGFILE structure.
         """
         self.trace_handle = None
@@ -788,7 +788,7 @@ class ETW:
                                     EventProvider start.
         :param event_id_filters: List of event ids to filter on.
         :param callback_data_flag: Determines how to format data passed into callback.
-        :param callback_wait_time: Time callback will sleep when called.
+        :param callback_wait_time: Time callback will sleep when called. If used, this may cause events to be dropped.
         :param trace_logfile: EVENT_TRACE_LOGFILE structure to be passed to the consumer.
         """
 
