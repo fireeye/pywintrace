@@ -290,3 +290,10 @@ ProcessTrace.restype = ct.c_ulong
 CloseTrace = ct.windll.advapi32.CloseTrace
 CloseTrace.argtypes = [TRACEHANDLE]
 CloseTrace.restype = ct.c_ulong
+
+ConvertSidToStringSidW = ct.windll.advapi32.ConvertSidToStringSidW
+ConvertSidToStringSidW.argtypes = [ct.c_void_p, ct.POINTER(wt.LPWSTR)]
+ConvertSidToStringSidW.restype = wt.BOOL
+
+LocalFree = ct.windll.kernel32.LocalFree
+

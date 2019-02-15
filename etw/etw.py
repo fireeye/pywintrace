@@ -585,6 +585,93 @@ class EventConsumer:
 
         return {name_field: data}
 
+
+    def _parseExtendedData(self, record):
+        """
+        This method handles dumping all extended data from the record
+
+        :param record: The EventRecord structure for the event we are parsing
+        :return: Returns a key-value pair as a dictionary.
+        """
+        result = {}
+        for i in range(record.contents.ExtendedDataCount):
+            ext_type = record.contents.ExtendedData[i].ExtType
+            data_ptr = record.contents.ExtendedData[i].DataPtr
+            data_size = record.contents.ExtendedData[i].DataSize
+            try:
+                if ext_type == ec.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID:
+                    d = ct.cast(data_ptr, ct.POINTER(ec.EVENT_EXTENDED_ITEM_RELATED_ACTIVITYID))
+                    result['RelatedActivityID'] = str(d.contents.RelatedActivityId)
+                elif ext_type == ec.EVENT_HEADER_EXT_TYPE_SID:
+                    buff = ct.create_string_buffer(data_size)
+                    ct.memmove(buff, data_ptr, data_size)
+                    sid_string = wt.LPWSTR()
+                    res = et.ConvertSidToStringSidW(ct.cast(buff, ct.c_void_p), ct.byref(sid_string))
+                    if res > 0:
+                        result['SID'] = str(sid_string.value)
+                        et.LocalFree(sid_string)
+                elif ext_type == ec.EVENT_HEADER_EXT_TYPE_TS_ID:
+                    d = ct.cast(data_ptr, ct.POINTER(ec.EVENT_EXTENDED_ITEM_TS_ID))
+                    result['TSID'] = d.contents.SessionId
+                elif ext_type == ec.EVENT_HEADER_EXT_TYPE_INSTANCE_INFO:
+                    d = ct.cast(data_ptr, ct.POINTER(ec.EVENT_EXTENDED_ITEM_INSTANCE))
+                    instance = {
+                        'InstanceId': d.contents.InstanceId,
+                        'ParentInstanceId': d.contents.ParentInstanceId,
+                        'ParentGuid': str(d.contents.ParentGuid)
+                    }
+                    result['InstanceInfo'] = instance
+                elif ext_type == ec.EVENT_HEADER_EXT_TYPE_STACK_TRACE32:
+                    nb_address = int((data_size - ct.sizeof(ct.c_ulonglong))/ ct.sizeof(ct.c_ulong))
+                    d = ct.cast(data_ptr, ct.POINTER(ec.EVENT_EXTENDED_ITEM_STACK_TRACE32))
+                    match_id = d.contents.MatchId
+                    addr_buf = ct.cast(ct.addressof(d.contents.Address), ct.POINTER((ct.c_ulong * nb_address)))
+                    addr_list = []
+                    for j in range(nb_address):
+                        addr_list.append(addr_buf.contents[j])
+                    result['StackTrace32'] = {
+                        'MatchId':match_id,
+                        'Address':addr_list
+                    }
+                elif ext_type == ec.EVENT_HEADER_EXT_TYPE_STACK_TRACE64:
+                    nb_address = int((data_size - ct.sizeof(ct.c_ulonglong))/ ct.sizeof(ct.c_ulonglong))
+                    d = ct.cast(data_ptr, ct.POINTER(ec.EVENT_EXTENDED_ITEM_STACK_TRACE64))
+                    match_id = d.contents.MatchId
+                    addr_buf = ct.cast(ct.addressof(d.contents.Address), ct.POINTER((ct.c_ulonglong * nb_address)))
+                    addr_list = []
+                    for j in range(nb_address):
+                        addr_list.append(addr_buf.contents[j])
+                    result['StackTrace64'] = {
+                        'MatchId':match_id,
+                        'Address':addr_list
+                    }
+                elif ext_type == ec.EVENT_HEADER_EXT_TYPE_PEBS_INDEX:
+                    d = ct.cast(data_ptr, ct.POINTER(ec.EVENT_EXTENDED_ITEM_PEBS_INDEX))
+                    result['PebsIndex'] = d.contents.PebsIndex
+                elif ext_type == ec.EVENT_HEADER_EXT_TYPE_PMC_COUNTERS:
+                    nb_counters = int(data_size / ct.sizeof(ct.c_ulonglong))
+                    counters_buf = ct.cast(data_ptr, ct.POINTER((ct.c_ulonglong * nb_counters)))
+                    counters_list = []
+                    for j in range(nb_counters):
+                        counters_list.append(counters_buf.contents[j])
+                    result['PMCCounters'] = counters_list
+                elif ext_type == ec.EVENT_HEADER_EXT_TYPE_PSM_KEY:
+                    pass
+                elif ext_type == ec.EVENT_HEADER_EXT_TYPE_EVENT_KEY:
+                    d = ct.cast(data_ptr, ct.POINTER(ec.EVENT_EXTENDED_ITEM_EVENT_KEY))
+                    result['EventKey'] = d.contents.Key
+                elif ext_type == ec.EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL:
+                    pass
+                elif ext_type == ec.EVENT_HEADER_EXT_TYPE_PROV_TRAITS:
+                    pass
+                elif ext_type == ec.EVENT_HEADER_EXT_TYPE_PROCESS_START_KEY:
+                    d = ct.cast(data_ptr, ct.POINTER(ec.EVENT_EXTENDED_ITEM_PROCESS_START_KEY))
+                    result['StartKey'] = d.contents.ProcessStartKey
+            except Exception as e:
+                print('Extended data parse error (type %d, size %d) : %s'%(ext_type, data_size, str(e)))
+        return result
+
+
     def _unpackComplexType(self, record, info, event_property):
         """
         A complex type (e.g., a structure with sub-properties) can only contain simple types. Loop over all
@@ -722,6 +809,10 @@ class EventConsumer:
                     # Add the description field in
                     parsed_data['Description'] = description
                     parsed_data['Task Name'] = task_name
+                    # Add ExtendedData if any
+                    if record.contents.EventHeader.Flags & ec.EVENT_HEADER_FLAG_EXTENDED_INFO:
+                        parsed_data['EventExtendedInfo'] = self._parseExtendedData(record)
+
                 except Exception as e:
                     logger.warning('Unable to parse event: {}'.format(e))
 
@@ -734,6 +825,7 @@ class EventConsumer:
 
             if (self.callback_data_flag == RETURN_ONLY_RAW_DATA_ON_ERROR and field_parse_error is False) or \
                self.callback_data_flag == RETURN_RAW_DATA_ON_ERROR or self.callback_data_flag == 0:
+
                 out.update(parsed_data)
 
             # Call the user's specified callback function
@@ -1065,3 +1157,4 @@ def get_keywords_bitmask(guid, keywords):
                 bitmask |= provider_keywords[keyword]
 
     return bitmask
+
