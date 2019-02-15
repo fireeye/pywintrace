@@ -668,7 +668,7 @@ class EventConsumer:
                     d = ct.cast(data_ptr, ct.POINTER(ec.EVENT_EXTENDED_ITEM_PROCESS_START_KEY))
                     result['StartKey'] = d.contents.ProcessStartKey
             except Exception as e:
-                print('Extended data parse error (type %d, size %d) : %s'%(ext_type, data_size, str(e)))
+                logger.warning('Extended data parse error (type %d, size %d) : %s'%(ext_type, data_size, str(e)))
         return result
 
 
@@ -811,7 +811,7 @@ class EventConsumer:
                     parsed_data['Task Name'] = task_name
                     # Add ExtendedData if any
                     if record.contents.EventHeader.Flags & ec.EVENT_HEADER_FLAG_EXTENDED_INFO:
-                        parsed_data['EventExtendedInfo'] = self._parseExtendedData(record)
+                        parsed_data['EventExtendedData'] = self._parseExtendedData(record)
 
                 except Exception as e:
                     logger.warning('Unable to parse event: {}'.format(e))
