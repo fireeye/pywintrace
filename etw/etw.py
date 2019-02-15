@@ -987,6 +987,18 @@ class ETW:
                          et.EVENT_TRACE_CONTROL_QUERY)
         return props.get().contents
 
+    def update(self, trace_properties):
+        '''
+        Update the trace session properties on the fly
+
+        :param trace_properties: TraceProperties class instance to use
+        :return: Does not return anything
+        '''
+        et.ControlTraceW(et.TRACEHANDLE(0),
+                         self.session_name,
+                         trace_properties.get(),
+                         et.EVENT_TRACE_CONTROL_UPDATE)
+
 
 class ProviderInfo:
     """ Container class for provider info """
