@@ -133,6 +133,7 @@ class EventProvider:
 
         # check if the session name is "NT Kernel Logger"
         self.kernel_trace = False
+        self.kernel_trace_was_running = False
         if session_name.lower() == et.KERNEL_LOGGER_NAME_LOWER:
             self.session_name = et.KERNEL_LOGGER_NAME
             self.kernel_trace = True
@@ -156,7 +157,7 @@ class EventProvider:
 
         :return:  Does not return anything.
         """
-
+        self.kernel_trace_was_running = False
         if self.kernel_trace is True:
             provider = self.providers[0]  # there should only be one provider
             self.session_properties.get().contents.Wnode.Guid = provider.guid
@@ -169,6 +170,8 @@ class EventProvider:
 
         status = et.StartTraceW(ct.byref(self.session_handle), self.session_name, self.session_properties.get())
         if status != tdh.ERROR_SUCCESS:
+            if self.kernel_trace == True and status == tdh.ERROR_ALREADY_EXISTS:
+                self.kernel_trace_was_running = True
             raise ct.WinError(status)
 
         if self.kernel_trace is False:
@@ -194,7 +197,8 @@ class EventProvider:
 
         :return: Does not return anything
         """
-        if self.session_handle.value == 0:
+        # don't stop if we don't have a handle, or it's the kernel trace and we started it ourself
+        if (self.session_handle.value == 0 and self.kernel_trace == False) or (self.kernel_trace == True and self.kernel_trace_was_running == True):
             return
 
         if self.kernel_trace is False:
