@@ -221,6 +221,7 @@ class EventProvider:
                                   et.EVENT_TRACE_CONTROL_STOP)
         if status != tdh.ERROR_SUCCESS:
             raise ct.WinError(status)
+
         et.CloseTrace(self.session_handle)
 
 
@@ -1002,6 +1003,18 @@ class ETW:
                          self.session_name,
                          trace_properties.get(),
                          et.EVENT_TRACE_CONTROL_UPDATE)
+
+    def control_stop(self, trace_properties):
+        '''
+        stop the trace session properties on the fly
+
+        :param trace_properties: TraceProperties class instance to use
+        :return: Does not return anything
+        '''
+        et.ControlTraceW(et.TRACEHANDLE(0),
+                         self.session_name,
+                         trace_properties.get(),
+                         et.EVENT_TRACE_CONTROL_STOP)
 
 
 class ProviderInfo:
