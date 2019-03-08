@@ -34,6 +34,13 @@ _CLSIDFromString = _ole32.CLSIDFromString
 _CLSIDFromProgID = _ole32.CLSIDFromProgID
 _CoCreateGuid = _ole32.CoCreateGuid
 
+# python 2
+try:
+    basestring
+except NameError:
+    # python 3
+    basestring = str
+
 
 class GUID(ct.Structure):
     _fields_ = [("Data1", DWORD),
@@ -81,7 +88,7 @@ class GUID(ct.Structure):
             progid = progid._reg_clsid_
         if isinstance(progid, cls):
             return progid
-        elif isinstance(progid, ct.basestring):
+        elif isinstance(progid, basestring):
             if progid.startswith("{"):
                 return cls(progid)
             inst = cls()
@@ -109,3 +116,4 @@ class GUID(ct.Structure):
 GUID_null = GUID()
 
 __all__ = ["GUID"]
+
