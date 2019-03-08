@@ -170,7 +170,7 @@ class EventProvider:
 
         status = et.StartTraceW(ct.byref(self.session_handle), self.session_name, self.session_properties.get())
         if status != tdh.ERROR_SUCCESS:
-            if self.kernel_trace == True and status == tdh.ERROR_ALREADY_EXISTS:
+            if self.kernel_trace is True and status == tdh.ERROR_ALREADY_EXISTS:
                 self.kernel_trace_was_running = True
             raise ct.WinError(status)
 
@@ -198,7 +198,10 @@ class EventProvider:
         :return: Does not return anything
         """
         # don't stop if we don't have a handle, or it's the kernel trace and we started it ourself
-        if (self.session_handle.value == 0 and self.kernel_trace == False) or (self.kernel_trace == True and self.kernel_trace_was_running == True):
+        if (
+            (self.session_handle.value == 0 and self.kernel_trace is False)
+            or (self.kernel_trace is True and self.kernel_trace_was_running is True)
+        ):
             return
 
         if self.kernel_trace is False:
@@ -590,7 +593,6 @@ class EventConsumer:
 
         return {name_field: data}
 
-
     def _parseExtendedData(self, record):
         """
         This method handles dumping all extended data from the record
@@ -627,7 +629,7 @@ class EventConsumer:
                     }
                     result['InstanceInfo'] = instance
                 elif ext_type == ec.EVENT_HEADER_EXT_TYPE_STACK_TRACE32:
-                    nb_address = int((data_size - ct.sizeof(ct.c_ulonglong))/ ct.sizeof(ct.c_ulong))
+                    nb_address = int((data_size - ct.sizeof(ct.c_ulonglong)) / ct.sizeof(ct.c_ulong))
                     d = ct.cast(data_ptr, ct.POINTER(ec.EVENT_EXTENDED_ITEM_STACK_TRACE32))
                     match_id = d.contents.MatchId
                     addr_buf = ct.cast(ct.addressof(d.contents.Address), ct.POINTER((ct.c_ulong * nb_address)))
@@ -635,11 +637,11 @@ class EventConsumer:
                     for j in range(nb_address):
                         addr_list.append(addr_buf.contents[j])
                     result['StackTrace32'] = {
-                        'MatchId':match_id,
-                        'Address':addr_list
+                        'MatchId': match_id,
+                        'Address': addr_list
                     }
                 elif ext_type == ec.EVENT_HEADER_EXT_TYPE_STACK_TRACE64:
-                    nb_address = int((data_size - ct.sizeof(ct.c_ulonglong))/ ct.sizeof(ct.c_ulonglong))
+                    nb_address = int((data_size - ct.sizeof(ct.c_ulonglong)) / ct.sizeof(ct.c_ulonglong))
                     d = ct.cast(data_ptr, ct.POINTER(ec.EVENT_EXTENDED_ITEM_STACK_TRACE64))
                     match_id = d.contents.MatchId
                     addr_buf = ct.cast(ct.addressof(d.contents.Address), ct.POINTER((ct.c_ulonglong * nb_address)))
@@ -647,8 +649,8 @@ class EventConsumer:
                     for j in range(nb_address):
                         addr_list.append(addr_buf.contents[j])
                     result['StackTrace64'] = {
-                        'MatchId':match_id,
-                        'Address':addr_list
+                        'MatchId': match_id,
+                        'Address': addr_list
                     }
                 elif ext_type == ec.EVENT_HEADER_EXT_TYPE_PEBS_INDEX:
                     d = ct.cast(data_ptr, ct.POINTER(ec.EVENT_EXTENDED_ITEM_PEBS_INDEX))
@@ -673,9 +675,8 @@ class EventConsumer:
                     d = ct.cast(data_ptr, ct.POINTER(ec.EVENT_EXTENDED_ITEM_PROCESS_START_KEY))
                     result['StartKey'] = d.contents.ProcessStartKey
             except Exception as e:
-                logger.warning('Extended data parse error (type %d, size %d) : %s'%(ext_type, data_size, str(e)))
+                logger.warning('Extended data parse error (type %d, size %d) : %s' % (ext_type, data_size, str(e)))
         return result
-
 
     def _unpackComplexType(self, record, info, event_property):
         """
@@ -693,7 +694,7 @@ class EventConsumer:
         if array_size is None:
             return {}
 
-        for i in range(array_size):
+        for _ in range(array_size):
             start_index = event_property.epi_u1.structType.StructStartIndex
             last_member = start_index + event_property.epi_u1.structType.NumOfStructMembers
 
