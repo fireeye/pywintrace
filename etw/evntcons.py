@@ -137,4 +137,3 @@ class EVENT_RECORD(ct.Structure):
                 ('ExtendedData', ct.POINTER(EVENT_HEADER_EXTENDED_DATA_ITEM)),
                 ('UserData', ct.c_void_p),
                 ('UserContext', ct.c_void_p)]
-

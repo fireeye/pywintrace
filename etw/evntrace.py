@@ -298,4 +298,3 @@ ConvertSidToStringSidW.argtypes = [ct.c_void_p, ct.POINTER(wt.LPWSTR)]
 ConvertSidToStringSidW.restype = wt.BOOL
 
 LocalFree = ct.windll.kernel32.LocalFree
-
