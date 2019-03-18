@@ -36,7 +36,7 @@ if sys.version_info < (3, 4):
 
 
 setup(name='pywintrace',
-      version='0.1.1',
+      version='0.2.0',
       description='ETW Tracing',
       author='Anthony Berglund',
       author_email='anthony.berglund@fireeye.com',
