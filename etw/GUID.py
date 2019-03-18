@@ -116,4 +116,3 @@ class GUID(ct.Structure):
 GUID_null = GUID()
 
 __all__ = ["GUID"]
-

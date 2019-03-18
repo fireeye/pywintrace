@@ -268,7 +268,7 @@ class EventConsumer:
         self.event_id_filters = event_id_filters if event_id_filters else []
         self.callback_data_flag = callback_data_flag if not callback_data_flag else self.check_callback_flag(callback_data_flag)  # NOQA
         self.callback_wait_time = callback_wait_time
-        
+
         if not trace_logfile:
             # Construct the EVENT_TRACE_LOGFILE structure
             self.trace_logfile = et.EVENT_TRACE_LOGFILE()
@@ -725,7 +725,7 @@ class EventConsumer:
 
         if self.callback_wait_time:
             time.sleep(self.callback_wait_time)
-        
+
         parsed_data = {}
         field_parse_error = False
 
@@ -1187,4 +1187,3 @@ def get_keywords_bitmask(guid, keywords):
                 bitmask |= provider_keywords[keyword]
 
     return bitmask
-
