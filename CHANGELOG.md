@@ -1,5 +1,11 @@
+## v0.2.0
+
+- Added callback throttling
+- Added support for extended data items
+
 v0.1.1
 ------
+
 - Fixed description parsing error
 - Added flag for raw data only
 - Added callback flag check in EventConsumer
