@@ -55,9 +55,8 @@ TOKEN_ADJUST_SESSIONID = 0x100
 # Defs for WIN32 error codes
 ERROR_NOT_ALL_ASSIGNED = 0x514
 
-
-logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.ERROR)
 
 
 class SYSTEMTIME(ct.Structure):
