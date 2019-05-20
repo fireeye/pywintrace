@@ -269,6 +269,11 @@ class EventConsumer:
         self.callback_data_flag = callback_data_flag if not callback_data_flag else self.check_callback_flag(callback_data_flag)  # NOQA
         self.callback_wait_time = callback_wait_time
 
+        # check if the logger name is "NT Kernel Logger"
+        self.kernel_trace = False
+        if logger_name.lower() == et.KERNEL_LOGGER_NAME_LOWER:
+            self.kernel_trace = True
+
         if not trace_logfile:
             # Construct the EVENT_TRACE_LOGFILE structure
             self.trace_logfile = et.EVENT_TRACE_LOGFILE()
@@ -734,7 +739,11 @@ class EventConsumer:
             event_id = 0
             out = record
         else:
-            event_id = record.contents.EventHeader.EventDescriptor.Id
+            # event ID is in "Opcode" field in kernel events, Id is always 0
+            if self.kernel_trace:
+                event_id = record.contents.EventHeader.EventDescriptor.Opcode
+            else:
+                event_id = record.contents.EventHeader.EventDescriptor.Id
             if self.event_id_filters and event_id not in self.event_id_filters:
                 return
             # set task name to provider guid for the time being
