@@ -300,6 +300,7 @@ class EventConsumer:
         # For whatever reason, the restype is ignored
         self.trace_handle = et.TRACEHANDLE(self.trace_handle)
         self.process_thread = threading.Thread(target=self._run, args=(self.trace_handle, self.end_capture))
+        self.process_thread.daemon = True
         self.process_thread.start()
 
     def stop(self):
