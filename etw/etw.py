@@ -243,6 +243,7 @@ class EventConsumer:
                  event_callback=None,
                  task_name_filters=None,
                  event_id_filters=None,
+                 providers_event_id_filters=None,
                  callback_data_flag=0,
                  callback_wait_time=0.0,
                  trace_logfile=None):
@@ -253,6 +254,7 @@ class EventConsumer:
         :param event_callback: The optional callback function which can be used to return the values.
         :param task_name_filters: List of filters to apply to the ETW capture
         :param event_id_filters: List of event ids to filter on.
+        :param providers_event_id_filters: Dict of provider/ list of ids to filter on.
         :param callback_data_flag: Determines how to format data passed into callback.
         :param callback_wait_time: Time callback will sleep when called. If used, this may cause events to be dropped.
         :param trace_logfile: EVENT_TRACE_LOGFILE structure.
@@ -266,8 +268,14 @@ class EventConsumer:
         self.index = 0
         self.task_name_filters = task_name_filters if task_name_filters else []
         self.event_id_filters = event_id_filters if event_id_filters else []
+        self.providers_event_id_filters = providers_event_id_filters if providers_event_id_filters else {}
         self.callback_data_flag = callback_data_flag if not callback_data_flag else self.check_callback_flag(callback_data_flag)  # NOQA
         self.callback_wait_time = callback_wait_time
+
+        # check if the logger name is "NT Kernel Logger"
+        self.kernel_trace = False
+        if logger_name.lower() == et.KERNEL_LOGGER_NAME_LOWER:
+            self.kernel_trace = True
 
         if not trace_logfile:
             # Construct the EVENT_TRACE_LOGFILE structure
@@ -300,6 +308,7 @@ class EventConsumer:
         # For whatever reason, the restype is ignored
         self.trace_handle = et.TRACEHANDLE(self.trace_handle)
         self.process_thread = threading.Thread(target=self._run, args=(self.trace_handle, self.end_capture))
+        self.process_thread.daemon = True
         self.process_thread.start()
 
     def stop(self):
@@ -733,11 +742,20 @@ class EventConsumer:
             event_id = 0
             out = record
         else:
-            event_id = record.contents.EventHeader.EventDescriptor.Id
+            # event ID is in "Opcode" field in kernel events, Id is always 0
+            if self.kernel_trace:
+                event_id = record.contents.EventHeader.EventDescriptor.Opcode
+            else:
+                event_id = record.contents.EventHeader.EventDescriptor.Id
             if self.event_id_filters and event_id not in self.event_id_filters:
                 return
             # set task name to provider guid for the time being
             task_name = str(record.contents.EventHeader.ProviderId)
+
+            # filter event ID in provider if requested (otherwise, we handle all events)
+            task_name_upper = task_name.upper()
+            if task_name_upper in self.providers_event_id_filters and event_id not in self.providers_event_id_filters[task_name_upper]:
+                return
 
             # add all header fields from EVENT_HEADER structure
             # https://msdn.microsoft.com/en-us/library/windows/desktop/aa363759(v=vs.85).aspx
@@ -861,6 +879,7 @@ class ETW:
             providers=None,
             ignore_exists_error=True,
             event_id_filters=None,
+            providers_event_id_filters=None,
             callback_data_flag=0,
             callback_wait_time=0.0,
             trace_logfile=None):
@@ -885,6 +904,7 @@ class ETW:
         :param ignore_exists_error: If true (default), the library will ignore an ERROR_ALREADY_EXISTS on the
                                     EventProvider start.
         :param event_id_filters: List of event ids to filter on.
+        :param providers_event_id_filters: Dict of provider/ list of ids to filter on.
         :param callback_data_flag: Determines how to format data passed into callback.
         :param callback_wait_time: Time callback will sleep when called. If used, this may cause events to be dropped.
         :param trace_logfile: EVENT_TRACE_LOGFILE structure to be passed to the consumer.
@@ -958,6 +978,7 @@ class ETW:
                                           self.event_callback,
                                           self.task_name_filters,
                                           self.event_id_filters,
+                                          self.providers_event_id_filters,
                                           self.callback_data_flag,
                                           self.callback_wait_time,
                                           self.trace_logfile)
