@@ -920,6 +920,11 @@ class ETW:
         else:
             self.event_id_filters = event_id_filters
 
+        if providers_event_id_filters is None:
+            self.providers_event_id_filters = {}
+        else:
+            self.providers_event_id_filters = providers_event_id_filters
+
         if providers is None:
             self.providers = []
         else:
