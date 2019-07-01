@@ -736,6 +736,7 @@ class EventConsumer:
             time.sleep(self.callback_wait_time)
 
         parsed_data = {}
+        record_parse_error = True
         field_parse_error = False
 
         if self.callback_data_flag == RETURN_RAW_UNFORMATTED_DATA:
@@ -837,13 +838,15 @@ class EventConsumer:
                     if record.contents.EventHeader.Flags & ec.EVENT_HEADER_FLAG_EXTENDED_INFO:
                         parsed_data['EventExtendedData'] = self._parseExtendedData(record)
 
+                    record_parse_error = False
                 except Exception as e:
                     logger.warning('Unable to parse event: {}'.format(e))
 
         try:
             if self.callback_data_flag == RETURN_RAW_DATA_ONLY or \
                     ((self.callback_data_flag == RETURN_RAW_DATA_ON_ERROR or
-                      self.callback_data_flag == RETURN_ONLY_RAW_DATA_ON_ERROR) and field_parse_error is True):
+                      self.callback_data_flag == RETURN_ONLY_RAW_DATA_ON_ERROR) and
+                     (field_parse_error or record_parse_error)):
                 out['UserData'] = b''.join([ct.cast(record.contents.UserData + i, wt.PBYTE).contents
                                             for i in range(record.contents.UserDataLength)])
 
