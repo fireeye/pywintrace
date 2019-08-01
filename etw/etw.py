@@ -244,6 +244,8 @@ class EventConsumer:
                  task_name_filters=None,
                  event_id_filters=None,
                  providers_event_id_filters=None,
+                 pid_whitelist=None,
+                 pid_blacklist=None,
                  callback_data_flag=0,
                  callback_wait_time=0.0,
                  trace_logfile=None):
@@ -255,6 +257,8 @@ class EventConsumer:
         :param task_name_filters: List of filters to apply to the ETW capture
         :param event_id_filters: List of event ids to filter on.
         :param providers_event_id_filters: Dict of provider/ list of ids to filter on.
+        :param pid_whitelist: List of PID for which we want to receive events (only events for those PIDs will be processed).
+        :param pid_blacklist: List of PID for which we don't want to receive events (events for all PIDs except those will be processed).
         :param callback_data_flag: Determines how to format data passed into callback.
         :param callback_wait_time: Time callback will sleep when called. If used, this may cause events to be dropped.
         :param trace_logfile: EVENT_TRACE_LOGFILE structure.
@@ -272,6 +276,9 @@ class EventConsumer:
         self.callback_data_flag = callback_data_flag if not callback_data_flag else self.check_callback_flag(callback_data_flag)  # NOQA
         self.callback_wait_time = callback_wait_time
 
+        self.pid_whitelist = set(pid_whitelist) if pid_whitelist else set()
+        self.pid_blacklist = set(pid_blacklist) if pid_blacklist else set()
+
         # check if the logger name is "NT Kernel Logger"
         self.kernel_trace = False
         if logger_name.lower() == et.KERNEL_LOGGER_NAME_LOWER:
@@ -288,6 +295,24 @@ class EventConsumer:
         if not self.trace_logfile.EventRecordCallback and \
            self.trace_logfile.ProcessTraceMode & (ec.PROCESS_TRACE_MODE_REAL_TIME | ec.PROCESS_TRACE_MODE_EVENT_RECORD):
             self.trace_logfile.EventRecordCallback = et.EVENT_RECORD_CALLBACK(self._processEvent)
+
+    def add_pid_whitelist(self, pid):
+        self.pid_whitelist.add(pid)
+
+    def remove_pid_whitelist(self, pid):
+        self.pid_whitelist.discard(pid)
+
+    def reset_whitelist(self):
+        self.pid_whitelist = set()
+
+    def add_pid_blacklist(self, pid):
+        self.pid_blacklist.add(pid)
+
+    def remove_pid_blacklist(self, pid):
+        self.pid_blacklist.discard(pid)
+
+    def reset_blacklist(self):
+        self.pid_blacklist = set()
 
     def __enter__(self):
         self.start()
@@ -758,6 +783,17 @@ class EventConsumer:
             if task_name_upper in self.providers_event_id_filters and event_id not in self.providers_event_id_filters[task_name_upper]:
                 return
 
+            pid = record.contents.EventHeader.ProcessId
+            # if we have a whitelist set, keep only events for those PIDs
+            # don't look at blacklist in that case
+            if self.pid_whitelist:
+                if pid not in self.pid_whitelist:
+                    return
+            # no whitelist, check for a blacklist
+            else:
+                if self.pid_blacklist and pid in self.pid_blacklist:
+                    return
+
             # add all header fields from EVENT_HEADER structure
             # https://msdn.microsoft.com/en-us/library/windows/desktop/aa363759(v=vs.85).aspx
             out = {'EventHeader': {
@@ -883,6 +919,8 @@ class ETW:
             ignore_exists_error=True,
             event_id_filters=None,
             providers_event_id_filters=None,
+            pid_whitelist=None,
+            pid_blacklist=None,
             callback_data_flag=0,
             callback_wait_time=0.0,
             trace_logfile=None):
@@ -908,6 +946,8 @@ class ETW:
                                     EventProvider start.
         :param event_id_filters: List of event ids to filter on.
         :param providers_event_id_filters: Dict of provider/ list of ids to filter on.
+        :param pid_whitelist: List of PID for which we want to receive events (only events for those PIDs will be processed).
+        :param pid_blacklist: List of PID for which we don't want to receive events (events for all PIDs except those will be processed).
         :param callback_data_flag: Determines how to format data passed into callback.
         :param callback_wait_time: Time callback will sleep when called. If used, this may cause events to be dropped.
         :param trace_logfile: EVENT_TRACE_LOGFILE structure to be passed to the consumer.
@@ -927,6 +967,16 @@ class ETW:
             self.providers_event_id_filters = {}
         else:
             self.providers_event_id_filters = providers_event_id_filters
+
+        if pid_whitelist is None:
+            self.pid_whitelist = set()
+        else:
+            self.pid_whitelist = set(pid_whitelist)
+
+        if pid_blacklist is None:
+            self.pid_blacklist = set()
+        else:
+            self.pid_blacklist = set(pid_blacklist)
 
         if providers is None:
             self.providers = []
@@ -987,6 +1037,8 @@ class ETW:
                                           self.task_name_filters,
                                           self.event_id_filters,
                                           self.providers_event_id_filters,
+                                          self.pid_whitelist,
+                                          self.pid_blacklist,
                                           self.callback_data_flag,
                                           self.callback_wait_time,
                                           self.trace_logfile)
@@ -1045,6 +1097,80 @@ class ETW:
                          self.session_name,
                          trace_properties.get(),
                          et.EVENT_TRACE_CONTROL_STOP)
+
+    def add_pid_whitelist(self, pid):
+        '''
+        add a PID to the whitelisted list of PIDs
+
+        :param pid: pid to whitelist
+        :return: Does not return anything
+        '''
+        # keep in our current list
+        self.pid_whitelist.add(pid)
+        # if consumer is started, update the list in the consumer
+        if self.consumer:
+            self.consumer.add_pid_whitelist(pid)
+
+    def remove_pid_whitelist(self, pid):
+        '''
+        remove a PID from the whitelisted list of PIDs
+
+        :param pid: pid to un-whitelist
+        :return: Does not return anything
+        '''
+        # remove from our list
+        self.pid_whitelist.discard(pid)
+        # if consumer is started, update the list in the consumer
+        if self.consumer:
+            self.consumer.remove_pid_whitelist(pid)
+
+    def reset_whitelist(self):
+        '''
+        reset the list of whitelisted PIDs
+
+        :return: Does not return anything
+        '''
+        self.pid_whitelist = set()
+        # if consumer is started, update the list in the consumer
+        if self.consumer:
+            self.consumer.reset_whitelist()
+
+    def add_pid_blacklist(self, pid):
+        '''
+        add a PID to the blacklisted list of PIDs
+
+        :param pid: pid to blacklist
+        :return: Does not return anything
+        '''
+        # keep in our current list
+        self.pid_blacklist.add(pid)
+        # if consumer is started, update the list in the consumer
+        if self.consumer:
+            self.consumer.add_pid_blacklist(pid)
+
+    def remove_pid_blacklist(self, pid):
+        '''
+        remove a PID from the blacklisted list of PIDs
+
+        :param pid: pid to un-blacklist
+        :return: Does not return anything
+        '''
+        # remove from our list
+        self.pid_blacklist.discard(pid)
+        # if consumer is started, update the list in the consumer
+        if self.consumer:
+            self.consumer.remove_pid_blacklist(pid)
+
+    def reset_blacklist(self):
+        '''
+        reset the list of blacklisted PIDs
+
+        :return: Does not return anything
+        '''
+        self.pid_blacklist = set()
+        # if consumer is started, update the list in the consumer
+        if self.consumer:
+            self.consumer.reset_blacklist()
 
 
 class ProviderInfo:
@@ -1216,3 +1342,4 @@ def get_keywords_bitmask(guid, keywords):
                 bitmask |= provider_keywords[keyword]
 
     return bitmask
+
