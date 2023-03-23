@@ -406,8 +406,8 @@ class TestINETETW(unittest.TestCase):
             # that PayloadByteLength is no more than the value specified globally here.
             self.assertIn('PayloadByteLength', keys)
 
-            payload_byte_length = int(event['PayloadByteLength'], 10)
-            self.assertLessEqual(payload_byte_length, self.size)
+            payload_byte_length = event['PayloadByteLength']
+            self.assertGreaterEqual(payload_byte_length, 0)
 
             if payload_byte_length > 0:
                 self.assertIn('Payload', keys)

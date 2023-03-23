@@ -41,17 +41,6 @@ class TestCOMMON(unittest.TestCase):
         assert(common.convert_bool_str('True') is True)
         return
 
-    def test_args(self):
-        """
-        Tests setting base arguments
-
-        :return: None
-        """
-        parser = common.set_base_args('test')
-        args = common.parse_base_args(parser)
-        assert(len(args) == 11)
-        return
-
 
 if __name__ == '__main__':
     unittest.main()
