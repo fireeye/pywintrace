@@ -14,24 +14,4 @@
 # limitations under the License.
 ########################################################################
 
-import time
-import pywintrace
-
-
-def some_func():
-    # define capture provider info
-    providers = [pywintrace.ProviderInfo('Some Provider', pywintrace.GUID("{11111111-1111-1111-1111-111111111111}"))]
-    # create instance of ETW class
-    job = pywintrace.ETW(providers=providers, event_callback=lambda x: print(x))
-    # start capture
-    job.start()
-
-    # wait some time
-    time.sleep(5)
-
-    # stop capture
-    job.stop()
-
-
-if __name__ == '__main__':
-    some_func()
+from etw import *

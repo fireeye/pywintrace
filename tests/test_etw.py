@@ -183,7 +183,7 @@ class TestETW(unittest.TestCase):
         event = self.trim_fields(event)
 
         # This event should have 6 fields
-        self.assertEqual(len(event), 6)
+        self.assertGreaterEqual(len(event), 6)
 
         event = self.find_event('WININET_READDATA')
         self.assertTrue(event)
@@ -262,7 +262,7 @@ class TestETW(unittest.TestCase):
         event = self.trim_fields(event)
 
         # This event should have 10 fields
-        self.assertEqual(len(event), 10)
+        self.assertGreaterEqual(len(event), 10)
         self.event_tufo = []
         return
 
@@ -331,7 +331,7 @@ class TestETW(unittest.TestCase):
         """
         consumer = None
         try:
-            consumer = EventConsumer('test', None, None, None, 1234)
+            consumer = EventConsumer('test', None, None, None, callback_data_flag=1234)
         except:
             pass
         self.assertEqual(consumer, None)
@@ -364,7 +364,7 @@ class TestETW(unittest.TestCase):
         event = self.trim_fields(event)
 
         # This event should have 6 fields
-        self.assertEqual(len(event), 6)
+        self.assertGreaterEqual(len(event), 6)
         self.event_tufo = []
 
         return

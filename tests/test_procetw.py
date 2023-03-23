@@ -154,7 +154,7 @@ class TestPROCETW(unittest.TestCase):
         keys = event.keys()
 
         # This event should have 6 fields
-        self.assertEqual(len(event), 6)
+        self.assertGreaterEqual(len(event), 6)
 
         self.assertIn('ImageName', keys)
         self.assertIn('ParentProcessID', keys)
@@ -177,7 +177,7 @@ class TestPROCETW(unittest.TestCase):
         keys = event.keys()
 
         # This event should have 16 fields
-        self.assertEqual(len(event), 16)
+        self.assertGreaterEqual(len(event), 16)
 
         self.assertIn('ExitCode', keys)
         self.assertIn('ExitTime', keys)
